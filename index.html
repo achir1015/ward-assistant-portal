@@ -57,6 +57,8 @@
   --cat-admin:#7fb2db;--cat-learn:#c39be0;--cat-tools:#5cbfa9;--cat-music:#e98fab;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}   /* 確保 hidden 一定會隱藏 */
+body{margin:0}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6}
 button,input{font:inherit;color:inherit}
@@ -169,6 +171,19 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .url-list td{padding:8px 18px;border-top:1px solid var(--line);white-space:nowrap}
 .url-list td:last-child{color:var(--ink-soft)}
 
+/* ===== 工具檢視器：在工作站裡打開工具，最上方固定「回主頁」列 ===== */
+.viewer{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.viewer-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--line);min-height:56px}
+.home-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;padding:8px 14px 8px 10px;background:var(--accent);color:var(--accent-ink);font-weight:700;cursor:pointer;white-space:nowrap;font-size:.95rem}
+.home-btn:hover{filter:brightness(1.06)}
+.viewer-title{display:flex;align-items:center;gap:10px;min-width:0;flex:1;font-weight:700;padding-left:6px}
+.viewer-title span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.viewer-body{position:relative;flex:1;min-height:0}
+.viewer-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.viewer-loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-soft);font-size:.9rem;pointer-events:none}
+body:has(.viewer:not([hidden])){overflow:hidden}
+@media (max-width:860px){ .viewer-bar{padding:6px 8px;gap:4px} .viewer-title .ico{display:none} .home-btn{padding:8px 12px 8px 8px} }
+
 /* ===== 內建播放器（停靠在右下角，切換頁面不中斷） ===== */
 .player{position:fixed;right:20px;bottom:20px;width:380px;max-width:calc(100% - 32px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:40;overflow:hidden}
 .player-head{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px}
@@ -241,6 +256,19 @@ body:has(#player.mini:not([hidden])) .main{padding-bottom:150px}
   <nav class="tabbar" id="tabbar" aria-label="分頁"></nav>
 </div>
 
+<!-- 工具檢視器：在工作站裡打開工具，最上方一列可回主頁 -->
+<section class="viewer" id="viewer" hidden aria-label="工具畫面">
+  <div class="viewer-bar">
+    <button class="home-btn" type="button" data-viewer="home" aria-label="回主頁">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>回主頁
+    </button>
+    <div class="viewer-title" id="viewerTitle"></div>
+    <button class="icon-btn" type="button" data-viewer="reload" aria-label="重新整理" title="重新整理"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+    <a class="icon-btn" id="viewerExternal" href="#" target="_blank" rel="noopener" aria-label="在新分頁開啟" title="在新分頁開啟（畫面有問題時使用）"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+  </div>
+  <div class="viewer-body" id="viewerBody"></div>
+</section>
+
 <!-- 內建播放器：放在主畫面外面，換頁時不會被重繪，音樂不中斷 -->
 <section class="player" id="player" hidden aria-label="播放器">
   <div class="player-head">
@@ -299,6 +327,10 @@ class Tool{
     this.playlistId = playlistId; // 有值＝可在站內播放的 YouTube 播放清單
   }
   get playable(){ return !!this.playlistId; }
+  // 同一個網站（achir1015.github.io）的工具可以在工作站裡打開；自架 NAS 服務改用新分頁
+  get embeddable(){
+    try{ return !this.selfHosted && new URL(this.url).hostname === 'achir1015.github.io'; }catch(e){ return false; }
+  }
   get embedUrl(){
     return `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(this.playlistId)}&autoplay=1&rel=0`;
   }
@@ -412,6 +444,51 @@ const catalog = new ToolCatalog(
 /* =====================================================
  * 畫面（View）與狀態
  * ===================================================== */
+// ---------- 工具檢視器（像護理站的「工作推車」：推出去用，用完一鍵推回站上） ----------
+const Viewer = {
+  el: () => document.getElementById('viewer'),
+  current: null,
+  open(tool, fromHistory=false){
+    this.current = tool;
+    document.getElementById('viewerTitle').innerHTML = `${iconBox(tool,32)}<span>${esc(tool.name)}</span>`;
+    document.getElementById('viewerExternal').href = tool.url;
+    document.getElementById('viewerBody').innerHTML =
+      `<div class="viewer-loading">正在開啟「${esc(tool.name)}」…</div>
+       <iframe src="${esc(tool.url)}" title="${esc(tool.name)}"
+         allow="geolocation; camera; microphone; clipboard-read; clipboard-write; fullscreen; autoplay; web-share"
+         onload="this.previousElementSibling && this.previousElementSibling.remove()"></iframe>`;
+    this.el().hidden = false;
+    document.title = tool.name + '｜病房助理工作站';
+    // 寫入瀏覽紀錄：手機「返回」手勢或瀏覽器返回鍵也能回主頁
+    if(!fromHistory) history.pushState({tool: tool.id}, '', '#' + tool.id);
+  },
+  close(){
+    this.current = null;
+    document.getElementById('viewerBody').innerHTML = '';
+    this.el().hidden = true;
+    document.title = '病房助理工作站';
+    state.view = 'home';
+    render();
+  },
+  // 回主頁：如果是從主頁點進來的，就用「返回」讓瀏覽紀錄保持乾淨
+  goHome(){
+    if(history.state && history.state.tool) history.back();
+    else { history.replaceState(null, '', location.pathname); this.close(); }
+  },
+  reload(){
+    const f = document.querySelector('#viewerBody iframe');
+    if(f) f.src = f.src;
+  }
+};
+
+// 瀏覽器返回／前進
+window.addEventListener('popstate', e => {
+  const id = e.state && e.state.tool;
+  const tool = id && catalog.byId(id);
+  if(tool && tool.embeddable) Viewer.open(tool, true);
+  else if(Viewer.current) Viewer.close();
+});
+
 // ---------- 播放器（像護理站的收音機：開著就一直播，走到哪頁都聽得到） ----------
 const Player = {
   el: () => document.getElementById('player'),
@@ -620,7 +697,7 @@ function enterApp(user){
  * 事件處理
  * ===================================================== */
 document.addEventListener('click', async e => {
-  const el = e.target.closest('[data-view],[data-cat],[data-fav],[data-copy],[data-open],[data-theme-set],[data-action]');
+  const el = e.target.closest('[data-viewer],[data-player],[data-view],[data-cat],[data-fav],[data-copy],[data-open],[data-theme-set],[data-action]');
   if(!el) return;
   const d = el.dataset;
 
@@ -628,8 +705,11 @@ document.addEventListener('click', async e => {
     const tool = catalog.byId(d.open);
     state.prefs.recordUse(d.open);
     if(tool && tool.playable){ e.preventDefault(); Player.play(tool); render(); return; } // 播放清單：站內播放
+    if(tool && tool.embeddable){ e.preventDefault(); Viewer.open(tool); return; }        // 工作站內開啟，上方有回主頁
     setTimeout(render, 300); return;   // 其他工具：不攔截連結，照常開新分頁
   }
+  if(d.viewer === 'home'){ Viewer.goHome(); return; }
+  if(d.viewer === 'reload'){ Viewer.reload(); return; }
   if(d.player === 'mini'){ Player.toggleMini(); return; }
   if(d.player === 'close'){ Player.close(); return; }
   if(d.view){ state.view = d.view; render(); window.scrollTo(0,0); return; }
@@ -664,6 +744,13 @@ setInterval(() => { if(state.user) renderChrome(); }, 60000);
 const DEFAULT_USER = 'achir1962@gmail.com';
 (function boot(){
   enterApp(DEFAULT_USER);
+  // 網址帶 #工具代號（例如 #quiz）時，直接打開該工具
+  const id = decodeURIComponent(location.hash.slice(1));
+  const tool = id && catalog.byId(id);
+  if(tool && tool.embeddable){
+    history.replaceState(null, '', location.pathname);
+    Viewer.open(tool);
+  }
 })();
 // 註冊 Service Worker（讓手機可安裝成 App；不支援的瀏覽器自動略過）
 if('serviceWorker' in navigator && location.protocol === 'https:'){

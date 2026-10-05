@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>病房助理工作站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 版面概念：像護理站的「交班白板」——左側是班別與導覽（手機改成底部分頁列），右側是依工作類別分組的工具卡 */
+:root{
+  --bg:#eef2f0;          /* 淡灰綠底，帶一點院區綠的色偏 */
+  --surface:#ffffff;
+  --surface-2:#f6f8f7;
+  --ink:#1d2a27;
+  --ink-soft:#5b6b67;
+  --line:#d6dfdc;
+  --accent:#1f6f62;      /* 院區深青綠 */
+  --accent-ink:#ffffff;
+  --accent-soft:#dcebe7;
+  --amber:#b8711c;       /* 提醒色：收藏、自架服務 */
+  --amber-soft:#f6ead8;
+  --danger:#b3412f;
+  --cat-admin:#2f6690;
+  --cat-learn:#7a4f9a;
+  --cat-tools:#1f6f62;
+  --shadow:0 1px 2px rgba(20,40,35,.06),0 4px 14px rgba(20,40,35,.06);
+  --font-display:"LXGW WenKai TC","Noto Serif TC",serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111917;--surface:#18221f;--surface-2:#1e2a27;--ink:#e3ece9;--ink-soft:#97a8a3;--line:#2c3a36;
+    --accent:#5cbfa9;--accent-ink:#0d1714;--accent-soft:#1f3631;--amber:#e3a456;--amber-soft:#3a2d1b;--danger:#e2735f;
+    --cat-admin:#7fb2db;--cat-learn:#c39be0;--cat-tools:#5cbfa9;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111917;--surface:#18221f;--surface-2:#1e2a27;--ink:#e3ece9;--ink-soft:#97a8a3;--line:#2c3a36;
+  --accent:#5cbfa9;--accent-ink:#0d1714;--accent-soft:#1f3631;--amber:#e3a456;--amber-soft:#3a2d1b;--danger:#e2735f;
+  --cat-admin:#7fb2db;--cat-learn:#c39be0;--cat-tools:#5cbfa9;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6}
+button,input{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+h1,h2,h3{text-wrap:balance;margin:0}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* ===== 登入畫面 ===== */
+.login{min-height:100%;display:grid;place-items:center;padding:32px 16px}
+.login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px 28px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:44px;height:44px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.brand h1{font-family:var(--font-display);font-size:1.45rem;line-height:1.25}
+.brand small{display:block;color:var(--ink-soft);font-size:.82rem;letter-spacing:.04em}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.85rem;color:var(--ink-soft);font-weight:500}
+.field input[type=email],.field input[type=password],.field input[type=text]{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:1rem}
+.field input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.pw-wrap{position:relative}
+.pw-wrap input{width:100%;padding-right:64px!important}
+.pw-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--accent);font-size:.85rem;padding:6px 8px;cursor:pointer}
+.check{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--ink-soft)}
+.btn{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink);font-size:1rem}
+.btn:hover{filter:brightness(1.06)}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.error{color:var(--danger);font-size:.88rem;min-height:1.4em;margin:0}
+.login-foot{font-size:.78rem;color:var(--ink-soft);margin:0}
+
+/* ===== 主框架 ===== */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100%}
+.side{background:var(--surface);border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:24px;position:sticky;top:0;height:100vh;overflow:auto}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{display:flex;align-items:center;gap:12px;border:0;background:none;padding:10px 12px;border-radius:10px;cursor:pointer;text-align:left;color:var(--ink-soft);font-weight:500}
+.nav button:hover{background:var(--surface-2);color:var(--ink)}
+.nav button[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.nav .count{margin-left:auto;font-size:.78rem}
+.shift{border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px}
+.shift .label{font-size:.72rem;letter-spacing:.12em;color:var(--ink-soft)}
+.shift .name{font-family:var(--font-display);font-size:1.3rem;color:var(--accent)}
+.shift .time{font-size:.85rem;color:var(--ink-soft)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;font-size:.85rem}
+.user-chip{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;flex:none}
+.user-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-soft);min-width:0}
+
+.main{padding-block:28px 48px;padding-inline:32px;min-width:0;display:flex;flex-direction:column;gap:24px}
+.topbar{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.greet h2{font-family:var(--font-display);font-size:1.75rem;line-height:1.3}
+.greet p{margin:2px 0 0;color:var(--ink-soft)}
+.search{position:relative;flex:1 1 280px;max-width:420px}
+.search input{width:100%;padding:11px 14px 11px 40px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:.9rem;color:var(--ink-soft);display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* 快速啟動列：最近使用 */
+.quick{display:flex;flex-direction:column;gap:10px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.section-head h3{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.section-head .hint{font-size:.8rem;color:var(--ink-soft)}
+.quick-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.quick-item{flex:none;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface);text-decoration:none;font-size:.9rem;white-space:nowrap}
+.quick-item:hover{border-color:var(--accent)}
+.quick-item .ico{width:30px;height:30px}
+
+.group{display:flex;flex-direction:column;gap:12px}
+.group-title{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:700}
+.group-title .bar{width:4px;height:18px;border-radius:2px}
+.group-title small{font-weight:400;color:var(--ink-soft);font-size:.82rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card-link{display:flex;gap:14px;padding:16px 16px 12px;text-decoration:none;flex:1;min-width:0}
+.ico{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none}
+.card-body{min-width:0;display:flex;flex-direction:column;gap:2px}
+.card-no{font-size:.72rem;color:var(--ink-soft);letter-spacing:.06em}
+.card-name{font-weight:700;font-size:1rem;line-height:1.35}
+.card-desc{font-size:.85rem;color:var(--ink-soft);line-height:1.5}
+.card-foot{display:flex;align-items:center;gap:6px;padding:8px 10px 10px 16px;border-top:1px dashed var(--line)}
+.tag{font-size:.72rem;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-soft)}
+.tag.warn{background:var(--amber-soft);color:var(--amber)}
+.card-foot .spacer{flex:1}
+.icon-btn{border:0;background:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--ink-soft)}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+.icon-btn.on{color:var(--amber)}
+.icon-btn.on svg{fill:currentColor}
+.uses{font-size:.75rem;color:var(--ink-soft)}
+
+.empty{border:1px dashed var(--line);border-radius:var(--radius);padding:32px 20px;text-align:center;color:var(--ink-soft);background:var(--surface)}
+.empty strong{display:block;color:var(--ink);font-size:1rem;margin-bottom:4px}
+
+/* 設定頁 */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:4px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;flex-wrap:wrap}
+.row + .row{border-top:1px solid var(--line)}
+.row .meta{min-width:0}
+.row .meta strong{display:block}
+.row .meta span{font-size:.85rem;color:var(--ink-soft)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 14px;cursor:pointer;font-size:.88rem}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.url-list{width:100%;overflow-x:auto}
+.url-list table{border-collapse:collapse;width:100%;font-size:.85rem}
+.url-list td{padding:8px 18px;border-top:1px solid var(--line);white-space:nowrap}
+.url-list td:last-child{color:var(--ink-soft)}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:.2s;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 手機：側欄收起，改用頂部列 + 底部分頁 */
+.mobile-top,.tabbar{display:none}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .main{padding-inline:16px;padding-block:12px 110px;gap:18px}
+  .mobile-top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);padding:10px 16px;border-bottom:1px solid var(--line)}
+  .mobile-top .brand h1{font-size:1.1rem}
+  .mobile-top .brand-mark{width:34px;height:34px}
+  .shift-pill{font-size:.8rem;padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;font-weight:500}
+  .greet h2{font-size:1.35rem}
+  .search{max-width:none}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+  .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;color:var(--ink-soft);padding:6px 0;cursor:pointer}
+  .tabbar button[aria-current="page"]{color:var(--accent);font-weight:700}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ===== 主系統 ===== -->
+<div id="appView">
+  <header class="mobile-top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <h1>病房助理工作站</h1>
+    </div>
+    <span class="shift-pill" id="shiftPill"></span>
+  </header>
+
+  <div class="app">
+    <aside class="side">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div><h1 style="font-size:1.2rem">病房助理工作站</h1></div>
+      </div>
+      <div class="shift" id="shiftCard"></div>
+      <nav class="nav" id="sideNav" aria-label="主選單"></nav>
+      <div class="side-foot">
+        <div class="user-chip"><div class="avatar" id="avatar"></div><span id="userEmail"></span></div>
+      </div>
+    </aside>
+
+    <main class="main" id="main"></main>
+  </div>
+
+  <nav class="tabbar" id="tabbar" aria-label="分頁"></nav>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* =====================================================
+ * 領域模型（Domain Model）
+ * 比喻：把整個系統想成「護理站」
+ *  - Tool          ＝ 站裡的一項器材（有編號、名稱、放在哪一櫃）
+ *  - Category      ＝ 器材櫃（排班行政 / 考照學習 / 實用工具）
+ *  - ToolCatalog   ＝ 器材清冊，負責查詢與篩選
+ *  - UserPrefs     ＝ 個人置物櫃（收藏、最近使用、使用次數、主題）
+ *  - ShiftClock    ＝ 護理站牆上的班別時鐘
+ * ===================================================== */
+
+// ---------- 安全的本機儲存（無痕模式或被封鎖時不會壞掉） ----------
+const SafeStore = {
+  get(key, fallback){
+    try{ const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+    catch(e){ return fallback; }
+  },
+  set(key, value){
+    try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){ /* 無法儲存時靜默略過 */ }
+  },
+  remove(key){ try{ localStorage.removeItem(key); }catch(e){} }
+};
+
+// ---------- 類別（器材櫃） ----------
+class Category{
+  constructor(id, name, note, colorVar){
+    this.id = id; this.name = name; this.note = note; this.colorVar = colorVar;
+  }
+}
+
+// ---------- 工具（器材） ----------
+class Tool{
+  constructor({no, id, name, desc, url, category, icon, selfHosted=false}){
+    this.no = no;               // 文件中的編號 01~10
+    this.id = id;               // 原始專案名稱
+    this.name = name;           // 中文顯示名稱
+    this.desc = desc;           // 一句話用途說明
+    this.url = url;
+    this.category = category;   // Category 物件的 id
+    this.icon = icon;           // SVG 路徑
+    this.selfHosted = selfHosted; // 是否為自架 NAS 服務（可能離線）
+  }
+  // 搜尋比對：名稱、說明、專案代號都能搜
+  matches(keyword){
+    if(!keyword) return true;
+    const k = keyword.trim().toLowerCase();
+    return [this.name, this.desc, this.id, this.no].some(s => String(s).toLowerCase().includes(k));
+  }
+}
+
+// ---------- 器材清冊 ----------
+class ToolCatalog{
+  constructor(categories, tools){
+    this.categories = categories;
+    this.tools = tools;
+  }
+  byId(id){ return this.tools.find(t => t.id === id); }
+  category(id){ return this.categories.find(c => c.id === id); }
+  filter({keyword='', categoryId='all'}={}){
+    return this.tools.filter(t => (categoryId === 'all' || t.category === categoryId) && t.matches(keyword));
+  }
+}
+
+// ---------- 個人偏好（置物櫃） ----------
+class UserPrefs{
+  constructor(owner){
+    this.key = 'ward-portal:' + owner;
+    const saved = SafeStore.get(this.key, {});
+    this.favorites = new Set(saved.favorites || []);
+    this.recent = saved.recent || [];      // [{id, at}] 最新的在前
+    this.uses = saved.uses || {};          // {toolId: 次數}
+    this.theme = saved.theme || 'system';  // system / light / dark
+  }
+  save(){
+    SafeStore.set(this.key, {favorites:[...this.favorites], recent:this.recent, uses:this.uses, theme:this.theme});
+  }
+  toggleFavorite(id){
+    this.favorites.has(id) ? this.favorites.delete(id) : this.favorites.add(id);
+    this.save();
+    return this.favorites.has(id);
+  }
+  recordUse(id){
+    this.uses[id] = (this.uses[id] || 0) + 1;
+    this.recent = [{id, at:Date.now()}, ...this.recent.filter(r => r.id !== id)].slice(0, 8);
+    this.save();
+  }
+  clearHistory(){ this.recent = []; this.uses = {}; this.save(); }
+}
+
+// ---------- 班別時鐘 ----------
+// 醫院三班制：白班 08–16、小夜 16–24、大夜 00–08
+class ShiftClock{
+  static current(now = new Date()){
+    const h = now.getHours();
+    if(h >= 8 && h < 16)  return {name:'白班', range:'08:00 – 16:00', greet:'早安'};
+    if(h >= 16)           return {name:'小夜班', range:'16:00 – 24:00', greet:'午安'};
+    return {name:'大夜班', range:'00:00 – 08:00', greet:'辛苦了'};
+  }
+  // 民國紀年日期，例如：民國115年10月5日（一）
+  static rocDate(now = new Date()){
+    const w = '日一二三四五六'[now.getDay()];
+    return `民國${now.getFullYear()-1911}年${now.getMonth()+1}月${now.getDate()}日（${w}）`;
+  }
+  static time(now = new Date()){
+    return now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});
+  }
+}
+
+/* =====================================================
+ * 資料：來自「病房助理整合文件」的 10 項工具
+ * ===================================================== */
+const ICONS = {
+  timeline:'<path d="M4 6h10M4 12h16M4 18h7"/><circle cx="17" cy="6" r="2"/><circle cx="14" cy="18" r="2"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/>',
+  form:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
+  book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/>',
+  qr:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/>',
+  pin:'<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  quiz:'<path d="M9 11l2 2 4-4"/><rect x="4" y="3.5" width="16" height="17" rx="2"/>',
+  cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+  music:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  gps:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5"/>',
+  hands:'<path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/><path d="M8.5 11h2l1-2 1.5 4 1-2h1.5"/>'
+};
+
+const catalog = new ToolCatalog(
+  [
+    new Category('admin', '排班與行政', '每天交班、排班、資料登打', '--cat-admin'),
+    new Category('learn', '考照與學習', '照顧服務員證照準備與閱讀', '--cat-learn'),
+    new Category('tools', '實用小工具', '產生、轉換、檢視', '--cat-tools'),
+  ],
+  [
+    new Tool({no:'01', id:'project-timeline', name:'專案進度時間軸', desc:'線上檢視各專案的里程碑與進度。', url:'https://achir1015.github.io/project-timeline/', category:'admin', icon:ICONS.timeline}),
+    new Tool({no:'02', id:'rcw-month', name:'月班表管理系統', desc:'排定與查詢每月班表。', url:'https://achir1015.github.io/rcw-month/', category:'admin', icon:ICONS.calendar}),
+    new Tool({no:'03', id:'A13input', name:'A13 輸入資料', desc:'A13 表單資料登打。', url:'https://achir1015.github.io/A13input/', category:'admin', icon:ICONS.form}),
+    new Tool({no:'07', id:'quiz', name:'照服員單一級學科測驗', desc:'技術士學科題庫練習與模擬考。', url:'https://achir1015.github.io/quiz/', category:'learn', icon:ICONS.quiz}),
+    new Tool({no:'10', id:'care-exam-practice', name:'照服員術科練習本', desc:'術科操作步驟與重點複習。', url:'https://achir1015.github.io/care-exam-practice/#', category:'learn', icon:ICONS.hands}),
+    new Tool({no:'04', id:'my-library', name:'雲端硬碟電子書', desc:'雲端書櫃，隨時翻閱電子書。', url:'https://achir1015.github.io/my-library/', category:'learn', icon:ICONS.book}),
+    new Tool({no:'05', id:'QR-Code', name:'QR Code 產生器', desc:'把網址或文字轉成 QR Code。', url:'https://achir1015.github.io/QR-Code/', category:'tools', icon:ICONS.qr}),
+    new Tool({no:'06', id:'taiwan-address-tool', name:'台灣地址填寫工具', desc:'縣市、區、路名快速填寫地址。', url:'https://achir1015.github.io/taiwan-address-tool/', category:'tools', icon:ICONS.pin}),
+    new Tool({no:'08', id:'GLB-3D-Viewer', name:'GLB 立體檢視器', desc:'開啟並旋轉檢視 3D 模型檔。', url:'https://achir1015.github.io/GLB-3D-Viewer/', category:'tools', icon:ICONS.cube}),
+    new Tool({no:'09', id:'yt-to-mp3', name:'YouTube 轉 MP3', desc:'貼上 YouTube 網址自動轉成 mp3。', url:'https://ipmos.ngrok.app/ytmp3/', category:'tools', icon:ICONS.music, selfHosted:true}),
+    new Tool({no:'11', id:'gps-arrival-test', name:'GPS 到達測試工具', desc:'用手機定位測試是否已抵達指定地點。', url:'https://achir1015.github.io/gps-arrival-test/', category:'tools', icon:ICONS.gps}),
+  ]
+);
+
+/* =====================================================
+ * 畫面（View）與狀態
+ * ===================================================== */
+const VIEWS = [
+  {id:'home',   name:'全部工具', icon:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'},
+  {id:'fav',    name:'我的常用', icon:'<path d="M12 3.8l2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z"/>'},
+  {id:'recent', name:'最近使用', icon:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'},
+  {id:'settings', name:'設定', icon:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>'},
+];
+
+const state = { user:null, prefs:null, view:'home', keyword:'', categoryId:'all' };
+const $ = sel => document.querySelector(sel);
+const svg = (paths, size=22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function applyTheme(){
+  const th = state.prefs ? state.prefs.theme : 'system';
+  if(th === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', th);
+}
+
+// 「多久以前」的中文說法
+function ago(ts){
+  const m = Math.round((Date.now()-ts)/60000);
+  if(m < 1) return '剛剛';
+  if(m < 60) return `${m} 分鐘前`;
+  const h = Math.round(m/60);
+  if(h < 24) return `${h} 小時前`;
+  return `${Math.round(h/24)} 天前`;
+}
+
+// ---------- 元件：工具卡 ----------
+function iconBox(tool, size=44){
+  const c = catalog.category(tool.category);
+  return `<span class="ico" style="width:${size}px;height:${size}px;background:color-mix(in srgb, var(${c.colorVar}) 14%, transparent);color:var(${c.colorVar})">${svg(tool.icon, size>36?24:18)}</span>`;
+}
+function toolCard(tool){
+  const fav = state.prefs.favorites.has(tool.id);
+  const uses = state.prefs.uses[tool.id] || 0;
+  return `
+  <article class="card">
+    <a class="card-link" href="${esc(tool.url)}" target="_blank" rel="noopener" data-open="${tool.id}">
+      ${iconBox(tool)}
+      <div class="card-body">
+        <span class="card-no mono">No.${tool.no} · ${esc(tool.id)}</span>
+        <span class="card-name">${esc(tool.name)}</span>
+        <span class="card-desc">${esc(tool.desc)}</span>
+      </div>
+    </a>
+    <div class="card-foot">
+      ${tool.selfHosted ? '<span class="tag warn" title="架設在自家 NAS，主機關機時會打不開">自架伺服器</span>' : '<span class="tag">GitHub Pages</span>'}
+      ${uses ? `<span class="uses mono">已開啟 ${uses} 次</span>` : ''}
+      <span class="spacer"></span>
+      <button class="icon-btn" type="button" data-copy="${tool.id}" aria-label="複製 ${esc(tool.name)} 網址" title="複製網址">${svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>',18)}</button>
+      <button class="icon-btn ${fav?'on':''}" type="button" data-fav="${tool.id}" aria-pressed="${fav}" aria-label="${fav?'移出':'加入'}我的常用" title="${fav?'移出常用':'加入常用'}">${svg(VIEWS[1].icon,18)}</button>
+    </div>
+  </article>`;
+}
+
+// ---------- 各頁面 ----------
+function renderHome(){
+  const tools = catalog.filter({keyword:state.keyword, categoryId:state.categoryId});
+  const recent = state.prefs.recent.map(r => catalog.byId(r.id)).filter(Boolean).slice(0,5);
+  const chips = [{id:'all', name:'全部', colorVar:null}, ...catalog.categories].map(c =>
+    `<button class="chip" type="button" data-cat="${c.id}" aria-pressed="${state.categoryId===c.id}">${c.colorVar?`<span class="dot" style="background:var(${c.colorVar})"></span>`:''}${c.name}</button>`).join('');
+
+  let groups = catalog.categories.map(c => {
+    const list = tools.filter(t => t.category === c.id);
+    if(!list.length) return '';
+    return `<section class="group">
+      <h3 class="group-title"><span class="bar" style="background:var(${c.colorVar})"></span>${c.name}<small>${c.note}</small></h3>
+      <div class="grid">${list.map(toolCard).join('')}</div>
+    </section>`;
+  }).join('');
+  if(!tools.length) groups = `<div class="empty"><strong>找不到「${esc(state.keyword)}」</strong>試試其他關鍵字，例如「班表」、「測驗」或「QR」。</div>`;
+
+  return `
+    ${topbar()}
+    ${recent.length && !state.keyword ? `
+    <section class="quick">
+      <div class="section-head"><h3>${svg(VIEWS[2].icon,18)}接續上次</h3><span class="hint">點一下直接開啟</span></div>
+      <div class="quick-row">${recent.map(t => `<a class="quick-item" href="${esc(t.url)}" target="_blank" rel="noopener" data-open="${t.id}">${iconBox(t,30)}${esc(t.name)}</a>`).join('')}</div>
+    </section>` : ''}
+    <div class="chips" role="group" aria-label="依類別篩選">${chips}</div>
+    ${groups}`;
+}
+
+function renderFav(){
+  const list = catalog.tools.filter(t => state.prefs.favorites.has(t.id));
+  return `${topbar('我的常用','把每天都會用的工具放這裡，打開就能找到。')}
+    ${list.length ? `<div class="grid">${list.map(toolCard).join('')}</div>`
+      : `<div class="empty"><strong>還沒有常用工具</strong>在任一工具卡右下角按星號，就會出現在這裡。</div>`}`;
+}
+
+function renderRecent(){
+  const list = state.prefs.recent.map(r => ({tool:catalog.byId(r.id), at:r.at})).filter(x => x.tool);
+  return `${topbar('最近使用','依開啟時間排序，最多保留 8 筆。')}
+    ${list.length ? `<div class="panel">${list.map(({tool,at}) => `
+      <div class="row">
+        <a class="card-link" style="padding:0;flex:1" href="${esc(tool.url)}" target="_blank" rel="noopener" data-open="${tool.id}">
+          ${iconBox(tool,38)}
+          <div class="card-body"><span class="card-name">${esc(tool.name)}</span><span class="card-desc">${ago(at)} · 共 ${state.prefs.uses[tool.id]||0} 次</span></div>
+        </a>
+      </div>`).join('')}</div>`
+      : `<div class="empty"><strong>尚無使用紀錄</strong>從「全部工具」開啟任何一項，就會記錄在這裡。</div>`}`;
+}
+
+function renderSettings(){
+  const th = state.prefs.theme;
+  return `${topbar('設定','')}
+    <div class="panel">
+      <div class="row"><div class="meta"><strong>顯示模式</strong><span>夜班時建議用深色，比較不刺眼。</span></div>
+        <div class="seg" role="group" aria-label="顯示模式">
+          ${[['system','跟隨系統'],['light','淺色'],['dark','深色']].map(([v,n]) => `<button type="button" data-theme-set="${v}" aria-pressed="${th===v}">${n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="row"><div class="meta"><strong>清除使用紀錄</strong><span>清掉「最近使用」與開啟次數，收藏會保留。</span></div>
+        <button class="btn btn-ghost" type="button" data-action="clear">清除</button>
+      </div>
+      <div class="row"><div class="meta"><strong>使用者</strong><span>${esc(state.user)}</span></div></div>
+    </div>
+    <section class="group">
+      <h3 class="group-title"><span class="bar" style="background:var(--ink-soft)"></span>工具網址總表<small>來源：病房助理整合文件</small></h3>
+      <div class="panel url-list"><table><tbody>
+        ${[...catalog.tools].sort((a,b)=>a.no.localeCompare(b.no)).map(t => `<tr><td class="mono">${t.no}</td><td>${esc(t.name)}</td><td class="mono">${esc(t.url)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </section>`;
+}
+
+function topbar(title, sub){
+  const now = new Date(), s = ShiftClock.current(now);
+  const showSearch = state.view === 'home';
+  return `<div class="topbar">
+    <div class="greet">
+      <h2>${title || `${s.greet}，今天是${s.name}`}</h2>
+      <p>${sub ?? `${ShiftClock.rocDate(now)}　共 ${catalog.tools.length} 項工具`}</p>
+    </div>
+    ${showSearch ? `<label class="search" for="search">${svg('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',18)}
+      <input id="search" type="search" placeholder="搜尋工具，例如：班表、測驗、QR" value="${esc(state.keyword)}" autocomplete="off"></label>` : ''}
+  </div>`;
+}
+
+// ---------- 導覽與班別 ----------
+function renderChrome(){
+  const counts = {home:catalog.tools.length, fav:state.prefs.favorites.size, recent:state.prefs.recent.length};
+  $('#sideNav').innerHTML = VIEWS.map(v => `<button type="button" data-view="${v.id}" ${state.view===v.id?'aria-current="page"':''}>${svg(v.icon,20)}${v.name}${counts[v.id]!=null?`<span class="count mono">${counts[v.id]}</span>`:''}</button>`).join('');
+  $('#tabbar').innerHTML = VIEWS.map(v => `<button type="button" data-view="${v.id}" ${state.view===v.id?'aria-current="page"':''}>${svg(v.icon,22)}${v.name}</button>`).join('');
+  const now = new Date(), s = ShiftClock.current(now);
+  $('#shiftCard').innerHTML = `<span class="label">目前班別</span><span class="name">${s.name}</span><span class="time mono">${s.range}</span><span class="time">${ShiftClock.rocDate(now)}　<span class="mono">${ShiftClock.time(now)}</span></span>`;
+  $('#shiftPill').textContent = `${s.name} ${ShiftClock.time(now)}`;
+  $('#userEmail').textContent = state.user;
+  $('#avatar').textContent = state.user[0].toUpperCase();
+}
+
+function render(keepFocus=false){
+  renderChrome();
+  const pages = {home:renderHome, fav:renderFav, recent:renderRecent, settings:renderSettings};
+  $('#main').innerHTML = pages[state.view]();
+  if(keepFocus){
+    const s = $('#search'); if(s){ s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
+  }
+}
+
+function enterApp(user){
+  state.user = user;
+  state.prefs = new UserPrefs(user);
+  applyTheme();
+  $('#appView').hidden = false;
+  render();
+}
+
+/* =====================================================
+ * 事件處理
+ * ===================================================== */
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-view],[data-cat],[data-fav],[data-copy],[data-open],[data-theme-set],[data-action]');
+  if(!el) return;
+  const d = el.dataset;
+
+  if(d.open){ state.prefs.recordUse(d.open); setTimeout(render, 300); return; } // 不攔截連結，讓它照常開新分頁
+  if(d.view){ state.view = d.view; render(); window.scrollTo(0,0); return; }
+  if(d.cat){ state.categoryId = d.cat; render(); return; }
+  if(d.fav){
+    const on = state.prefs.toggleFavorite(d.fav);
+    toast(on ? '已加入我的常用' : '已移出我的常用'); render(); return;
+  }
+  if(d.copy){
+    const t = catalog.byId(d.copy);
+    try{ await navigator.clipboard.writeText(t.url); toast('網址已複製'); }
+    catch(err){ toast(t.url); }
+    return;
+  }
+  if(d.themeSet){ state.prefs.theme = d.themeSet; state.prefs.save(); applyTheme(); render(); return; }
+  if(d.action === 'clear'){ state.prefs.clearHistory(); toast('使用紀錄已清除'); render(); return; }
+});
+
+// 中文注音／拼音輸入時（組字中）先不重繪，等選字完成再搜尋，避免打字被打斷
+document.addEventListener('input', e => {
+  if(e.target.id === 'search' && !e.isComposing){ state.keyword = e.target.value; render(true); }
+});
+document.addEventListener('compositionend', e => {
+  if(e.target.id === 'search'){ state.keyword = e.target.value; render(true); }
+});
+
+// 每分鐘更新班別與時間
+setInterval(() => { if(state.user) renderChrome(); }, 60000);
+
+// ---------- 啟動 ----------
+// 免登入：打開網頁就直接以預設帳號進入工作站
+const DEFAULT_USER = 'achir1962@gmail.com';
+(function boot(){
+  enterApp(DEFAULT_USER);
+})();
+</script>
+
+</body>
+</html>

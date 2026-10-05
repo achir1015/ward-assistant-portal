@@ -1,4 +1,5 @@
-# 病房助理工作站
+# 病房助理工作站 https://achir1015.github.io/ward-assistant-portal/
+<img width="1857" height="938" alt="image" src="https://github.com/user-attachments/assets/3e5388b3-be28-471b-bd85-0db95d1f43b7" />
 
 整合病房助理日常會用到的 11 項線上工具，一個入口全部打開。手機、電腦都能用，免登入。
 

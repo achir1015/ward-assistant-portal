@@ -37,6 +37,7 @@
   --cat-admin:#2f6690;
   --cat-learn:#7a4f9a;
   --cat-tools:#1f6f62;
+  --cat-music:#b04a6a;   /* 創作歌曲：玫瑰紅 */
   --shadow:0 1px 2px rgba(20,40,35,.06),0 4px 14px rgba(20,40,35,.06);
   --font-display:"LXGW WenKai TC","Noto Serif TC",serif;
   --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
@@ -47,13 +48,13 @@
   :root:not([data-theme="light"]){
     --bg:#111917;--surface:#18221f;--surface-2:#1e2a27;--ink:#e3ece9;--ink-soft:#97a8a3;--line:#2c3a36;
     --accent:#5cbfa9;--accent-ink:#0d1714;--accent-soft:#1f3631;--amber:#e3a456;--amber-soft:#3a2d1b;--danger:#e2735f;
-    --cat-admin:#7fb2db;--cat-learn:#c39be0;--cat-tools:#5cbfa9;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
+    --cat-admin:#7fb2db;--cat-learn:#c39be0;--cat-tools:#5cbfa9;--cat-music:#e98fab;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#111917;--surface:#18221f;--surface-2:#1e2a27;--ink:#e3ece9;--ink-soft:#97a8a3;--line:#2c3a36;
   --accent:#5cbfa9;--accent-ink:#0d1714;--accent-soft:#1f3631;--amber:#e3a456;--amber-soft:#3a2d1b;--danger:#e2735f;
-  --cat-admin:#7fb2db;--cat-learn:#c39be0;--cat-tools:#5cbfa9;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
+  --cat-admin:#7fb2db;--cat-learn:#c39be0;--cat-tools:#5cbfa9;--cat-music:#e98fab;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -168,12 +169,30 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .url-list td{padding:8px 18px;border-top:1px solid var(--line);white-space:nowrap}
 .url-list td:last-child{color:var(--ink-soft)}
 
+/* ===== 內建播放器（停靠在右下角，切換頁面不中斷） ===== */
+.player{position:fixed;right:20px;bottom:20px;width:380px;max-width:calc(100% - 32px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:40;overflow:hidden}
+.player-head{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px}
+.player-head .eq{display:flex;align-items:flex-end;gap:2px;height:14px;color:var(--cat-music)}
+.player-head .eq i{width:3px;background:currentColor;border-radius:1px;animation:eq 1s ease-in-out infinite}
+.player-head .eq i:nth-child(2){animation-delay:.2s}.player-head .eq i:nth-child(3){animation-delay:.4s}
+@keyframes eq{0%,100%{height:4px}50%{height:14px}}
+.player-title{flex:1;min-width:0;font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-frame{aspect-ratio:16/9;width:100%;max-width:100%;background:#000}
+.player-frame iframe{width:100%;height:100%;border:0;display:block}
+.player.mini .player-frame{height:0;aspect-ratio:auto}   /* 縮小時只藏畫面，聲音繼續播 */
+.player-foot{display:flex;justify-content:space-between;align-items:center;padding:6px 14px 10px;font-size:.8rem;color:var(--ink-soft)}
+.player-foot a{color:var(--accent)}
+/* 播放器開著時，主畫面底部多留空間，最後一排卡片才不會被擋住 */
+body:has(#player:not([hidden]):not(.mini)) .main{padding-bottom:340px}
+body:has(#player.mini:not([hidden])) .main{padding-bottom:150px}
+.tag.music{background:color-mix(in srgb, var(--cat-music) 15%, transparent);color:var(--cat-music)}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:.2s;z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* 手機：側欄收起，改用頂部列 + 底部分頁 */
 .mobile-top,.tabbar{display:none}
 @media (max-width:860px){
+  .player{right:8px;left:8px;width:auto;max-width:none;bottom:calc(70px + env(safe-area-inset-bottom,0px))}
   .app{grid-template-columns:minmax(0,1fr)}
   .side{display:none}
   .main{padding-inline:16px;padding-block:12px 110px;gap:18px}
@@ -188,7 +207,7 @@ h1,h2,h3{text-wrap:balance;margin:0}
   .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;color:var(--ink-soft);padding:6px 0;cursor:pointer}
   .tabbar button[aria-current="page"]{color:var(--accent);font-weight:700}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.player-head .eq i{animation:none;height:8px}}
 </style>
 </head>
 <body>
@@ -221,6 +240,18 @@ h1,h2,h3{text-wrap:balance;margin:0}
 
   <nav class="tabbar" id="tabbar" aria-label="分頁"></nav>
 </div>
+
+<!-- 內建播放器：放在主畫面外面，換頁時不會被重繪，音樂不中斷 -->
+<section class="player" id="player" hidden aria-label="播放器">
+  <div class="player-head">
+    <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="player-title" id="playerTitle"></span>
+    <button class="icon-btn" type="button" data-player="mini" id="playerMiniBtn" aria-label="縮小播放器" title="縮小（音樂繼續播）"></button>
+    <button class="icon-btn" type="button" data-player="close" aria-label="關閉播放器" title="停止並關閉"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="player-frame" id="playerFrame"></div>
+  <div class="player-foot"><span id="playerNote">可在畫面中切換上一首 / 下一首</span><a id="playerYt" href="#" target="_blank" rel="noopener">在 YouTube 開啟</a></div>
+</section>
 
 <div class="toast" id="toast" role="status"></div>
 
@@ -256,7 +287,7 @@ class Category{
 
 // ---------- 工具（器材） ----------
 class Tool{
-  constructor({no, id, name, desc, url, category, icon, selfHosted=false}){
+  constructor({no, id, name, desc, url, category, icon, selfHosted=false, playlistId=null}){
     this.no = no;               // 文件中的編號 01~10
     this.id = id;               // 原始專案名稱
     this.name = name;           // 中文顯示名稱
@@ -265,6 +296,11 @@ class Tool{
     this.category = category;   // Category 物件的 id
     this.icon = icon;           // SVG 路徑
     this.selfHosted = selfHosted; // 是否為自架 NAS 服務（可能離線）
+    this.playlistId = playlistId; // 有值＝可在站內播放的 YouTube 播放清單
+  }
+  get playable(){ return !!this.playlistId; }
+  get embedUrl(){
+    return `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(this.playlistId)}&autoplay=1&rel=0`;
   }
   // 搜尋比對：名稱、說明、專案代號都能搜
   matches(keyword){
@@ -344,6 +380,7 @@ const ICONS = {
   pin:'<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
   quiz:'<path d="M9 11l2 2 4-4"/><rect x="4" y="3.5" width="16" height="17" rx="2"/>',
   cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+  playlist:'<path d="M4 6h11M4 10.5h11M4 15h6"/><path d="M14 19.5V14l6-1.5v5.5"/><circle cx="12.2" cy="19.5" r="1.8"/><circle cx="18.2" cy="18" r="1.8"/>',
   music:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
   gps:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5"/>',
   hands:'<path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/><path d="M8.5 11h2l1-2 1.5 4 1-2h1.5"/>'
@@ -354,6 +391,7 @@ const catalog = new ToolCatalog(
     new Category('admin', '排班與行政', '每天交班、排班、資料登打', '--cat-admin'),
     new Category('learn', '考照與學習', '照顧服務員證照準備與閱讀', '--cat-learn'),
     new Category('tools', '實用小工具', '產生、轉換、檢視', '--cat-tools'),
+    new Category('music', '我的創作', '用 AI 作詞作曲的原創歌曲', '--cat-music'),
   ],
   [
     new Tool({no:'01', id:'project-timeline', name:'專案進度時間軸', desc:'線上檢視各專案的里程碑與進度。', url:'https://achir1015.github.io/project-timeline/', category:'admin', icon:ICONS.timeline}),
@@ -367,12 +405,44 @@ const catalog = new ToolCatalog(
     new Tool({no:'08', id:'GLB-3D-Viewer', name:'GLB 立體檢視器', desc:'開啟並旋轉檢視 3D 模型檔。', url:'https://achir1015.github.io/GLB-3D-Viewer/', category:'tools', icon:ICONS.cube}),
     new Tool({no:'09', id:'yt-to-mp3', name:'YouTube 轉 MP3', desc:'貼上 YouTube 網址自動轉成 mp3。', url:'https://ipmos.ngrok.app/ytmp3/', category:'tools', icon:ICONS.music, selfHosted:true}),
     new Tool({no:'11', id:'gps-arrival-test', name:'GPS 到達測試工具', desc:'用手機定位測試是否已抵達指定地點。', url:'https://achir1015.github.io/gps-arrival-test/', category:'tools', icon:ICONS.gps}),
+    new Tool({no:'12', id:'ai-songs', name:'AI 創作歌曲播放清單', desc:'SUNO 與 Musicful 創作的原創歌曲，點一下就在這裡播放。', url:'https://www.youtube.com/playlist?list=PLMiXt5EIkXI0', category:'music', icon:ICONS.playlist, playlistId:'PLMiXt5EIkXI0'}),
   ]
 );
 
 /* =====================================================
  * 畫面（View）與狀態
  * ===================================================== */
+// ---------- 播放器（像護理站的收音機：開著就一直播，走到哪頁都聽得到） ----------
+const Player = {
+  el: () => document.getElementById('player'),
+  current: null,
+  play(tool){
+    // 同一個清單正在播就不重新載入，只把播放器展開
+    if(this.current !== tool.id){
+      document.getElementById('playerFrame').innerHTML =
+        `<iframe src="${tool.embedUrl}" title="${esc(tool.name)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+      document.getElementById('playerTitle').textContent = tool.name;
+      document.getElementById('playerYt').href = tool.url;
+      this.current = tool.id;
+    }
+    this.el().hidden = false;
+    this.setMini(false);
+  },
+  setMini(on){
+    this.el().classList.toggle('mini', on);
+    const btn = document.getElementById('playerMiniBtn');
+    btn.innerHTML = svg(on ? '<path d="M6 15l6-6 6 6"/>' : '<path d="M6 9l6 6 6-6"/>', 18);
+    btn.setAttribute('aria-label', on ? '展開播放器' : '縮小播放器');
+    btn.title = on ? '展開畫面' : '縮小（音樂繼續播）';
+  },
+  toggleMini(){ this.setMini(!this.el().classList.contains('mini')); },
+  close(){
+    document.getElementById('playerFrame').innerHTML = '';   // 移除 iframe＝停止播放
+    this.current = null;
+    this.el().hidden = true;
+  }
+};
+
 const VIEWS = [
   {id:'home',   name:'全部工具', icon:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'},
   {id:'fav',    name:'我的常用', icon:'<path d="M12 3.8l2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z"/>'},
@@ -425,7 +495,7 @@ function toolCard(tool){
       </div>
     </a>
     <div class="card-foot">
-      ${tool.selfHosted ? '<span class="tag warn" title="架設在自家 NAS，主機關機時會打不開">自架伺服器</span>' : '<span class="tag">GitHub Pages</span>'}
+      ${tool.playable ? '<span class="tag music">▶ 站內播放</span>' : tool.selfHosted ? '<span class="tag warn" title="架設在自家 NAS，主機關機時會打不開">自架伺服器</span>' : '<span class="tag">GitHub Pages</span>'}
       ${uses ? `<span class="uses mono">已開啟 ${uses} 次</span>` : ''}
       <span class="spacer"></span>
       <button class="icon-btn" type="button" data-copy="${tool.id}" aria-label="複製 ${esc(tool.name)} 網址" title="複製網址">${svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>',18)}</button>
@@ -554,7 +624,14 @@ document.addEventListener('click', async e => {
   if(!el) return;
   const d = el.dataset;
 
-  if(d.open){ state.prefs.recordUse(d.open); setTimeout(render, 300); return; } // 不攔截連結，讓它照常開新分頁
+  if(d.open){
+    const tool = catalog.byId(d.open);
+    state.prefs.recordUse(d.open);
+    if(tool && tool.playable){ e.preventDefault(); Player.play(tool); render(); return; } // 播放清單：站內播放
+    setTimeout(render, 300); return;   // 其他工具：不攔截連結，照常開新分頁
+  }
+  if(d.player === 'mini'){ Player.toggleMini(); return; }
+  if(d.player === 'close'){ Player.close(); return; }
   if(d.view){ state.view = d.view; render(); window.scrollTo(0,0); return; }
   if(d.cat){ state.categoryId = d.cat; render(); return; }
   if(d.fav){

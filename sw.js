@@ -1,5 +1,5 @@
 // 簡易 Service Worker：讓手機可以「安裝」成 App，並在沒網路時仍能打開首頁
-const CACHE = 'ward-portal-v5';
+const CACHE = 'ward-portal-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

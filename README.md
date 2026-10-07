@@ -1,7 +1,7 @@
 # 病房助理工作站 https://achir1015.github.io/ward-assistant-portal/
 <img width="1857" height="938" alt="image" src="https://github.com/user-attachments/assets/3e5388b3-be28-471b-bd85-0db95d1f43b7" />
 
-整合病房助理日常會用到的 12 項線上工具（含站內播放的 AI 創作歌曲），一個入口全部打開。手機、電腦都能用，免登入。
+整合病房助理日常會用到的 13 項線上工具（含站內播放的 AI 創作歌曲），一個入口全部打開。手機、電腦都能用，免登入。
 
 **網址：** https://achir1015.github.io/ward-assistant-portal/
 
@@ -20,6 +20,7 @@
 | 09 | [YouTube 轉 MP3](https://ipmos.ngrok.app/ytmp3/)（自架 NAS） | 實用小工具 |
 | 10 | [照服員術科練習本](https://achir1015.github.io/care-exam-practice/) | 考照與學習 |
 | 11 | [GPS 到達測試工具](https://achir1015.github.io/gps-arrival-test/) | 實用小工具 |
+| 13 | [居家服務督導員工作手冊](https://achir1015.github.io/home-care-supervisor-manual/) | 考照與學習 |
 | 12 | [AI 創作歌曲播放清單](https://www.youtube.com/playlist?list=PLMiXt5EIkXI0)（站內播放） | 我的創作 |
 
 ## 功能

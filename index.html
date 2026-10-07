@@ -413,6 +413,7 @@ const ICONS = {
   quiz:'<path d="M9 11l2 2 4-4"/><rect x="4" y="3.5" width="16" height="17" rx="2"/>',
   cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
   manual:'<path d="M6 3.5h10.5L19 6v14.5H6z"/><path d="M9 12.5l3.5-3 3.5 3M10 12v4h5v-4"/>',
+  manual:'<path d="M3.5 11.5L12 4.5l8.5 7"/><path d="M5.5 10v9.5h13V10"/><path d="M9.5 14h5M9.5 17h3.5"/>',
   playlist:'<path d="M4 6h11M4 10.5h11M4 15h6"/><path d="M14 19.5V14l6-1.5v5.5"/><circle cx="12.2" cy="19.5" r="1.8"/><circle cx="18.2" cy="18" r="1.8"/>',
   music:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
   gps:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5"/>',
@@ -439,6 +440,7 @@ const catalog = new ToolCatalog(
     new Tool({no:'09', id:'yt-to-mp3', name:'YouTube 轉 MP3', desc:'貼上 YouTube 網址自動轉成 mp3。', url:'https://ipmos.ngrok.app/ytmp3/', category:'tools', icon:ICONS.music, selfHosted:true}),
     new Tool({no:'11', id:'gps-arrival-test', name:'GPS 到達測試工具', desc:'用手機定位測試是否已抵達指定地點。', url:'https://achir1015.github.io/gps-arrival-test/', category:'tools', icon:ICONS.gps}),
     new Tool({no:'13', id:'home-care-supervisor-manual', name:'居家服務督導員工作手冊', desc:'居服督導日常業務流程與規範，隨時查閱。', url:'https://achir1015.github.io/home-care-supervisor-manual/', category:'learn', icon:ICONS.manual}),
+    new Tool({no:'13', id:'home-care-supervisor-manual', name:'居家服務督導員工作手冊', desc:'居服督導員的工作流程與規範，隨時查閱。', url:'https://achir1015.github.io/home-care-supervisor-manual/', category:'learn', icon:ICONS.manual}),
     new Tool({no:'12', id:'ai-songs', name:'AI 創作歌曲播放清單', desc:'SUNO 與 Musicful 創作的原創歌曲，點一下就在這裡播放。', url:'https://www.youtube.com/playlist?list=PLMiXt5EIkXI0', category:'music', icon:ICONS.playlist, playlistId:'PLMiXt5EIkXI0'}),
   ]
 );

@@ -20,8 +20,8 @@
 | 09 | [YouTube 轉 MP3](https://ipmos.ngrok.app/ytmp3/)（自架 NAS） | 實用小工具 |
 | 10 | [照服員術科練習本](https://achir1015.github.io/care-exam-practice/) | 考照與學習 |
 | 11 | [GPS 到達測試工具](https://achir1015.github.io/gps-arrival-test/) | 實用小工具 |
-| 13 | [居家服務督導員工作手冊](https://achir1015.github.io/home-care-supervisor-manual/) | 考照與學習 |
 | 12 | [AI 創作歌曲播放清單](https://www.youtube.com/playlist?list=PLMiXt5EIkXI0)（站內播放） | 我的創作 |
+| 13 | [居家服務督導員工作手冊](https://achir1015.github.io/home-care-supervisor-manual/) | 考照與學習 |
 
 ## 功能
 

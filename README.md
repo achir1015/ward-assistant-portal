@@ -1,7 +1,7 @@
 # 病房助理工作站 https://achir1015.github.io/ward-assistant-portal/
 <img width="1857" height="938" alt="image" src="https://github.com/user-attachments/assets/3e5388b3-be28-471b-bd85-0db95d1f43b7" />
 
-整合病房助理日常會用到的 16 項線上工具（含站內播放的 AI 創作歌曲），一個入口全部打開。手機、電腦都能用，免登入。
+整合病房助理日常會用到的 17 項線上工具（含站內播放的 AI 創作歌曲），一個入口全部打開。手機、電腦都能用，免登入。
 
 **網址：** https://achir1015.github.io/ward-assistant-portal/
 
@@ -25,6 +25,7 @@
 | 14 | [長照組合計算系統](https://achir1015.github.io/Long-term-care-combined-calculation-system/) | 排班與行政 |
 | 15 | [照顧服務員訓練指引｜章節閱讀與查詢程式](https://achir1015.github.io/caregiver-training-guide/) | 考照與學習 |
 | 16 | [照顧服務員技術稽核（線上查詢與閱讀）](https://achir1015.github.io/caregiver-skills-audit/) | 考照與學習 |
+| 17 | [外傭技術教育簡報產生器](https://achir1015.github.io/ward-assistant-portal/wa-training/) | 考照與學習 |
 
 ## 功能
 

@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>外傭技術教育簡報產生器</title>
+<meta name="description" content="臺北市立聯合醫院忠孝院區 RCW 病房助理技術教育：逐項設定，產生外傭訓練簡報大綱、NotebookLM 指令與 Q&A Word 檔。">
+<meta name="theme-color" content="#7a1e3f">
+<link rel="icon" href="../favicon.ico">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 版面概念：左側「病歷夾」式步驟條 + 右側工作區；手機改為上方可滑動步驟條、下方固定操作列 */
+:root{
+  --bg:#f3f1f4;          /* 帶一點玫瑰色偏的淺灰 */
+  --surface:#ffffff;
+  --surface-2:#f8f6f9;
+  --ink:#1f2430;
+  --ink-soft:#5d6472;
+  --line:#dcd7de;
+  --rose:#a3244f;        /* 深粉紅：主強調 */
+  --rose-deep:#7a1e3f;
+  --rose-soft:#f6e6ec;
+  --navy:#1f3a5f;        /* 深藍：結構與標題 */
+  --navy-soft:#e3eaf3;
+  --ok:#2f7a55;
+  --warn:#b8711c;
+  --danger:#b3412f;
+  --slide-bg:#1f3a5f;
+  --slide-ink:#ffffff;
+  --slide-accent:#ff8fb3;
+  --shadow:0 1px 2px rgba(40,20,40,.06),0 6px 18px rgba(40,20,40,.07);
+  --font-display:"LXGW WenKai TC","Noto Serif TC",serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16131a;--surface:#1f1b24;--surface-2:#26212c;--ink:#ece6ef;--ink-soft:#a79fae;--line:#3a3340;
+    --rose:#ef7aa1;--rose-deep:#f3a3be;--rose-soft:#3a2230;--navy:#8fb2dc;--navy-soft:#1e2a3a;
+    --ok:#6cc79a;--warn:#e3a456;--danger:#ec8a77;--slide-bg:#13243c;--slide-ink:#f4f6fb;--slide-accent:#ff8fb3;
+    --shadow:0 1px 2px rgba(0,0,0,.35);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16131a;--surface:#1f1b24;--surface-2:#26212c;--ink:#ece6ef;--ink-soft:#a79fae;--line:#3a3340;
+  --rose:#ef7aa1;--rose-deep:#f3a3be;--rose-soft:#3a2230;--navy:#8fb2dc;--navy-soft:#1e2a3a;
+  --ok:#6cc79a;--warn:#e3a456;--danger:#ec8a77;--slide-bg:#13243c;--slide-ink:#f4f6fb;--slide-accent:#ff8fb3;
+  --shadow:0 1px 2px rgba(0,0,0,.35);color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.65 var(--font-body);-webkit-text-size-adjust:100%;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;line-height:1.3;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- 頁首 ---------- */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--rose-deep)}
+.top{background:var(--rose-deep);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 260px}
+.brand svg{flex:none}
+.brand h1{font-size:1.15rem;color:#fff}
+.brand small{display:block;font:500 .72rem/1.3 var(--font-body);opacity:.85;letter-spacing:.04em}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:560px){.top-actions{width:100%}.top-actions .btn{flex:1}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 14px;min-height:44px;cursor:pointer;font-weight:500;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--rose)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--rose);border-color:var(--rose);color:#fff}
+.btn.primary:hover{background:var(--rose-deep)}
+.btn.navy{background:var(--navy);border-color:var(--navy);color:var(--surface)}
+.btn.ghost{background:transparent}
+.btn.small{min-height:36px;padding:6px 10px;font-size:.88rem}
+.top .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff}
+.top .btn:hover{background:rgba(255,255,255,.22)}
+.top .btn.ai-on{background:#fff;color:var(--rose-deep)}
+.ico{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- 版面 ---------- */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:24px;padding-block:22px}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr);gap:14px;padding-block:14px}}
+
+/* 步驟條（病歷夾分頁） */
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;position:sticky;top:84px;align-self:start}
+.steps button{width:100%;display:grid;grid-template-columns:30px 1fr;align-items:center;gap:10px;text-align:left;border:1px solid transparent;background:transparent;border-radius:10px;padding:8px 10px;cursor:pointer;color:var(--ink-soft)}
+.steps .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:500 .85rem var(--font-mono);background:var(--surface);border:1.5px solid var(--line)}
+.steps .lbl{font-weight:500;line-height:1.3}
+.steps .lbl small{display:block;font-weight:400;font-size:.75rem;color:var(--ink-soft)}
+.steps button[aria-current="step"]{background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:var(--shadow)}
+.steps button[aria-current="step"] .num{background:var(--rose);border-color:var(--rose);color:#fff}
+.steps button.done .num{background:var(--rose-soft);border-color:var(--rose);color:var(--rose-deep)}
+@media (max-width:860px){
+  .steps{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;scrollbar-width:none;margin-inline:-4px}
+  .steps::-webkit-scrollbar{display:none}
+  .steps li{flex:none}
+  .steps button{grid-template-columns:26px auto;padding:6px 10px 6px 6px;gap:6px}
+  .steps .num{width:26px;height:26px;font-size:.78rem}
+  .steps .lbl small{display:none}
+}
+
+/* 工作區卡片 */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;min-width:0}
+@media (max-width:560px){.panel{padding:16px}}
+.panel-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.panel-head .t{flex:1;min-width:0}
+.eyebrow{font:500 .72rem/1 var(--font-mono);letter-spacing:.12em;color:var(--rose);text-transform:uppercase;margin-bottom:6px}
+.panel-head h2{font-size:1.5rem}
+.panel-head p{margin:4px 0 0;color:var(--ink-soft);max-width:60ch}
+.say{border-radius:999px}
+
+/* 表單 */
+.grid{display:grid;gap:14px}
+.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:640px){.grid.two,.grid.three{grid-template-columns:minmax(0,1fr)}}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:500;font-size:.92rem;min-width:0}
+label.f .hint{font-weight:400;color:var(--ink-soft);font-size:.8rem}
+input[type=text],input[type=date],input[type=number],input[type=password],select,textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:10px 12px;min-height:44px;font-size:16px}
+textarea{resize:vertical;line-height:1.6}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px var(--rose-soft)}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:500;font-size:.92rem;margin-bottom:8px;padding:0}
+
+/* 主題卡片：月份 + 主題 + 主講 */
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.topic{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;border:1.5px solid var(--line);border-radius:12px;background:var(--surface-2);padding:12px 14px;cursor:pointer;min-height:92px}
+.topic .m{font:500 .75rem var(--font-mono);color:var(--rose);letter-spacing:.06em}
+.topic .n{font:700 1.05rem/1.35 var(--font-display)}
+.topic .p{font-size:.8rem;color:var(--ink-soft)}
+.topic[aria-checked="true"]{border-color:var(--rose);background:var(--rose-soft)}
+.topic[aria-checked="true"]::after{content:"";position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--rose) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/12px no-repeat}
+
+/* 選擇晶片 */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;min-height:44px;background:var(--surface-2);cursor:pointer;font-weight:500}
+.chip input{accent-color:var(--rose);width:18px;height:18px;margin:0}
+.chip:has(input:checked){border-color:var(--rose);background:var(--rose-soft)}
+.styles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.style-card{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2);cursor:pointer}
+.style-card input{accent-color:var(--rose);margin-top:4px}
+.style-card:has(input:checked){border-color:var(--rose);background:var(--rose-soft)}
+.style-card b{display:block}
+.style-card span{font-size:.8rem;color:var(--ink-soft)}
+.swatch{display:flex;gap:3px;margin-top:6px}
+.swatch i{width:16px;height:16px;border-radius:4px;display:block}
+
+.note{border-left:4px solid var(--navy);background:var(--navy-soft);padding:10px 14px;border-radius:0 10px 10px 0;font-size:.88rem;color:var(--ink)}
+.note.rose{border-color:var(--rose);background:var(--rose-soft)}
+.note b{color:var(--navy)}
+.note.rose b{color:var(--rose-deep)}
+
+/* PDF 區 */
+.drop{border:2px dashed var(--line);border-radius:12px;padding:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--surface-2)}
+.drop.has{border-style:solid;border-color:var(--ok)}
+.drop .meta{flex:1;min-width:180px}
+.pdf-thumb{width:140px;max-width:100%;border:1px solid var(--line);border-radius:6px;background:#fff}
+
+/* ---------- 預覽與修改 ---------- */
+.gen-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.gen-bar .status{flex:1;min-width:200px;font-size:.88rem;color:var(--ink-soft)}
+.editor{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px}
+@media (max-width:1000px){.editor{grid-template-columns:minmax(0,1fr)}}
+.slide-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:640px;overflow:auto}
+@media (max-width:1000px){.slide-list{flex-direction:row;overflow-x:auto;max-height:none;padding-bottom:6px}}
+.slide-list button{width:100%;display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;text-align:left;border:1.5px solid var(--line);border-radius:10px;padding:8px;background:var(--surface-2);cursor:pointer;font-size:.82rem;line-height:1.35}
+@media (max-width:1000px){.slide-list li{flex:none;width:150px}}
+.slide-list .sn{font:500 .78rem var(--font-mono);color:var(--rose)}
+.slide-list .st{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.slide-list button[aria-current="true"]{border-color:var(--rose);background:var(--rose-soft)}
+
+/* 16:9 投影片預覽（僅示意排版，正式視覺交給 NotebookLM） */
+.slide-frame{container-type:inline-size;width:100%;max-width:100%}
+.slide{aspect-ratio:16/9;max-width:100%;border-radius:10px;overflow:hidden;position:relative;background:var(--slide-bg);color:var(--slide-ink);padding:5cqw 6cqw;display:flex;flex-direction:column;gap:2cqw;box-shadow:var(--shadow)}
+.slide::before{content:"";position:absolute;inset:0;background:
+  linear-gradient(transparent 0 calc(100% - 1px),rgba(255,255,255,.06) 0) 0 0/100% 8cqw,
+  linear-gradient(90deg,transparent 0 calc(100% - 1px),rgba(255,255,255,.06) 0) 0 0/8cqw 100%;pointer-events:none}
+.slide::after{content:"";position:absolute;right:-8cqw;top:-8cqw;width:34cqw;height:34cqw;border-radius:50%;background:radial-gradient(circle,rgba(255,143,179,.35),transparent 70%);pointer-events:none}
+.slide>*{position:relative;z-index:1}
+.slide .s-tag{font:500 1.6cqw var(--font-mono);letter-spacing:.14em;color:var(--slide-accent);text-transform:uppercase}
+.slide .s-title{font:700 3.6cqw/1.3 var(--font-display);text-wrap:balance}
+.slide .s-sub{font:500 2.4cqw/1.35 var(--font-body);opacity:.9}
+.slide ul{margin:0;padding:0;list-style:none;display:grid;gap:1.2cqw;font-size:2.15cqw;line-height:1.4}
+.slide li{display:grid;grid-template-columns:3cqw 1fr;gap:1cqw;align-items:start}
+.slide li::before{content:"";width:1.6cqw;height:1.6cqw;margin-top:.7cqw;border-radius:.4cqw;background:var(--slide-accent);transform:rotate(45deg)}
+.slide .s-foot{margin-top:auto;display:flex;justify-content:space-between;font:500 1.4cqw var(--font-mono);opacity:.7}
+.slide .s-art{position:absolute;right:5cqw;bottom:6cqw;width:16cqw;height:16cqw;opacity:.9;stroke:var(--slide-accent);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;z-index:0}
+.slide.cover{justify-content:center;text-align:center;align-items:center;background:linear-gradient(135deg,#7a1e3f,#1f3a5f 70%)}
+.slide.cover .s-title{font-size:4.2cqw}
+.slide.cover .s-sub{font-size:3.2cqw}
+.slide.cover .s-by{font-size:2.2cqw;opacity:.9;margin-top:1cqw}
+.slide.cover .s-hosp{font:500 1.8cqw var(--font-body);letter-spacing:.1em;opacity:.85}
+.slide.terms ul{font-size:1.9cqw}
+.slide-enter{animation:slideIn .35s ease}
+@keyframes slideIn{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.edit-form{display:grid;gap:12px;margin-top:16px}
+.edit-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.edit-row .grow{flex:1}
+.qa-list{display:grid;gap:12px;counter-reset:qa}
+.qa-item{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2);display:grid;gap:8px}
+.qa-item .qn{font:500 .8rem var(--font-mono);color:var(--rose)}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:22px 0 14px}
+.tabs button{border:0;background:transparent;padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;font-weight:500;color:var(--ink-soft);min-height:44px}
+.tabs button[aria-selected="true"]{color:var(--rose-deep);border-color:var(--rose)}
+
+/* ---------- 輸出 ---------- */
+.out-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.out-card{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--surface-2);display:flex;flex-direction:column;gap:10px}
+.out-card h3{font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.out-card p{margin:0;font-size:.86rem;color:var(--ink-soft);flex:1}
+.doc-ico{width:34px;height:40px;border-radius:4px;display:grid;place-items:end center;padding-bottom:4px;font:700 .6rem var(--font-mono);color:#fff;background:#2b579a;flex:none}
+.prompt-box{width:100%;min-height:260px;font:13px/1.6 var(--font-mono);white-space:pre-wrap}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 18px;border-radius:999px;font-weight:500;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px);text-align:center}
+
+/* ---------- 下方固定操作列 ---------- */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.bottom .wrap{display:flex;gap:10px;align-items:center;padding-block:10px}
+.bottom .pos{flex:1;font-size:.85rem;color:var(--ink-soft);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- 對話框 ---------- */
+dialog{border:1px solid var(--line);border-radius:14px;padding:0;max-width:min(560px,calc(100% - 32px));width:100%;background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(20,10,20,.5)}
+dialog form{padding:20px;display:grid;gap:14px}
+dialog h3{font-size:1.25rem}
+dialog .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+/* ---------- 教學導覽 ---------- */
+#tour{position:fixed;inset:0;z-index:50}
+.tour-spot{z-index:1;position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(20,10,25,.62);transition:all .35s ease;pointer-events:none}
+.tour-spot::after{content:"";position:absolute;inset:-4px;border:3px solid var(--slide-accent);border-radius:14px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.03)}}
+.tour-card{z-index:2;position:fixed;left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 32px));background:var(--surface);color:var(--ink);border-radius:16px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.35);display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:start}
+.tour-card[data-pos="bottom"]{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.tour-card[data-pos="top"]{top:calc(16px + env(safe-area-inset-top,0px))}
+.tour-card[data-pos="center"]{top:50%;transform:translate(-50%,-50%)}
+.tour-card.pop{animation:pop .3s ease}
+@keyframes pop{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
+.tour-mascot{width:72px;height:72px}
+@media (max-width:560px){.tour-card{grid-template-columns:52px 1fr;padding:14px}.tour-mascot{width:52px;height:52px}.tour-meta .btn{flex:1 1 auto}}
+.tour-mascot .mouth{transform-origin:36px 50px;transition:transform .1s}
+.tour-mascot.talking .mouth{animation:talk .28s ease-in-out infinite alternate}
+.tour-mascot.talking .body{animation:bob 1.2s ease-in-out infinite}
+@keyframes talk{from{transform:scaleY(.3)}to{transform:scaleY(1.2)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.tour-text{font-size:1rem;line-height:1.6;margin:0 0 10px;min-height:3.2em}
+.tour-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;grid-column:1/-1}
+.tour-count{font:500 .8rem var(--font-mono);color:var(--ink-soft);margin-right:auto}
+body.touring{overflow:hidden}
+body.touring .toast{display:none}
+@media (max-width:560px){
+  .top .btn{min-height:38px;padding:6px 10px;font-size:.85rem}
+  .top .btn .t-long{display:none}
+  .brand h1{font-size:1.02rem}
+}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- 圖示庫 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-speak" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h8"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></symbol>
+  <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M8 14h8M8 17h5"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9.7 9.7 0 00-6.7 2.8L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <!-- 投影片頁型插圖（簡單線條，僅示意） -->
+  <symbol id="a-target" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18"/><circle cx="24" cy="24" r="11"/><circle cx="24" cy="24" r="4"/><path d="M36 12l6-6M38 6h4v4"/></symbol>
+  <symbol id="a-kit" viewBox="0 0 48 48"><rect x="6" y="14" width="36" height="26" rx="4"/><path d="M18 14v-4h12v4M24 21v12M18 27h12"/></symbol>
+  <symbol id="a-steps" viewBox="0 0 48 48"><path d="M6 40h10V30h10V20h10V10h6"/><circle cx="11" cy="35" r="2"/><circle cx="21" cy="25" r="2"/><circle cx="31" cy="15" r="2"/></symbol>
+  <symbol id="a-shield" viewBox="0 0 48 48"><path d="M24 4l16 6v12c0 10-7 18-16 22C15 40 8 32 8 22V10z"/><path d="M17 24l5 5 9-10"/></symbol>
+  <symbol id="a-x" viewBox="0 0 48 48"><circle cx="14" cy="24" r="10"/><path d="M10 20l8 8M18 20l-8 8"/><circle cx="34" cy="24" r="10"/><path d="M29 24l4 4 6-7"/></symbol>
+  <symbol id="a-chat" viewBox="0 0 48 48"><path d="M6 10h24v16H16l-6 6v-6H6z"/><path d="M34 18h8v16h-4v5l-5-5H22v-4"/></symbol>
+  <symbol id="a-flag" viewBox="0 0 48 48"><path d="M10 44V6M10 8h26l-5 8 5 8H10"/></symbol>
+  <symbol id="a-heart" viewBox="0 0 48 48"><path d="M24 40S6 29 6 17a9 9 0 0118-3 9 9 0 0118 3c0 12-18 23-18 23z"/></symbol>
+  <symbol id="a-q" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18"/><path d="M19 19a5 5 0 119 3c-2 1.5-4 2.5-4 5M24 33v1"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="9" fill="#fff"/><path d="M18 8v20M8 18h20" stroke="#a3244f" stroke-width="5" stroke-linecap="round"/></svg>
+      <div><h1>外傭技術教育簡報產生器</h1><small>臺北市立聯合醫院忠孝院區 RCW 病房助理</small></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="btnTour" type="button"><svg class="ico"><use href="#i-play"/></svg><span>語音<span class="t-long">教學</span>導覽</span></button>
+      <button class="btn" id="btnAi" type="button"><svg class="ico"><use href="#i-spark"/></svg><span id="aiLabel">AI 設定</span></button>
+      <a class="btn" href="../" id="btnHome"><svg class="ico"><use href="#i-left"/></svg><span><span class="t-long">回</span>工作站</span></a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap layout">
+  <nav aria-label="設定步驟"><ol class="steps" id="steps"></ol></nav>
+
+  <section class="panel" id="panel" aria-live="polite">
+
+    <!-- 01 主題 -->
+    <div class="step" data-step="0">
+      <div class="panel-head">
+        <div class="t"><div class="eyebrow">Step 01 · 主題</div><h2>選擇本月教學主題</h2>
+          <p>依「WA 技術教育（外勞）」月份主題表，點選主題會自動帶入建議的依據文件與範本內容。</p></div>
+        <button class="btn small say" type="button" data-say="0"><svg class="ico"><use href="#i-speak"/></svg>語音說明</button>
+      </div>
+      <div class="topics" id="topicGrid" role="radiogroup" aria-label="月份主題"></div>
+      <div class="grid two" style="margin-top:16px">
+        <label class="f" id="customWrap" hidden>自訂主題名稱
+          <input type="text" id="customTopic" placeholder="例如：抽痰照護">
+        </label>
+        <label class="f">授課日期 <span class="hint">可留空</span>
+          <input type="date" id="date">
+        </label>
+      </div>
+    </div>
+
+    <!-- 02 人員 -->
+    <div class="step" data-step="1" hidden>
+      <div class="panel-head">
+        <div class="t"><div class="eyebrow">Step 02 · 人員</div><h2>簡報者與指導者</h2>
+          <p>會出現在封面第一頁：簡報人：病房助理員［員工編號 員工姓名］｜護理指導員：護理師［員工姓名］。</p></div>
+        <button class="btn small say" type="button" data-say="1"><svg class="ico"><use href="#i-speak"/></svg>語音說明</button>
+      </div>
+      <div class="grid three">
+        <label class="f">簡報人員工編號<input type="text" id="empNo" placeholder="N1918" autocomplete="off"></label>
+        <label class="f">簡報人姓名<input type="text" id="presenterName" placeholder="潘全偉"></label>
+        <label class="f">護理指導員姓名<input type="text" id="instructorName" placeholder="程新元"></label>
+      </div>
+      <label class="f" style="margin-top:14px">次標題（40pt）<input type="text" id="subtitle"></label>
+      <div class="note" style="margin-top:16px" id="coverPreviewNote"></div>
+    </div>
+
+    <!-- 03 學員 -->
+    <div class="step" data-step="2" hidden>
+      <div class="panel-head">
+        <div class="t"><div class="eyebrow">Step 03 · 學員</div><h2>接受訓練的外傭</h2>
+          <p>勾選學員國籍，簡報會加入「關鍵詞母語對照」頁，並依華語程度調整用字。</p></div>
+        <button class="btn small say" type="button" data-say="2"><svg class="ico"><use href="#i-speak"/></svg>語音說明</button>
+      </div>
+      <fieldset><legend>學員國籍（可複選）</legend><div class="chips" id="natChips"></div></fieldset>
+      <fieldset style="margin-top:16px"><legend>華語程度</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="level" value="basic">基礎（短句、常用字）</label>
+          <label class="chip"><input type="radio" name="level" value="mid">日常會話</label>
+        </div>
+      </fieldset>
+      <label class="f" style="margin-top:16px;max-width:240px">預計人數 <span class="hint">可留空</span><input type="number" id="audienceSize" min="1" inputmode="numeric"></label>
+    </div>
+
+    <!-- 04 依據文件 -->
+    <div class="step" data-step="3" hidden>
+      <div class="panel-head">
+        <div class="t"><div class="eyebrow">Step 04 · 依據文件</div><h2>照護指定的 PDF 文案</h2>
+          <p>寫下依據的衛教單張名稱。若要讓 AI 讀內容，請選擇 PDF 並指定相關頁數（掃描版也可以）。</p></div>
+        <button class="btn small say" type="button" data-say="3"><svg class="ico"><use href="#i-speak"/></svg>語音說明</button>
+      </div>
+      <label class="f">依據文件名稱 <span class="hint">會寫進 NotebookLM 指令與 Q&A 解答</span><input type="text" id="sourceTitle"></label>
+      <div class="drop" id="drop" style="margin-top:14px">
+        <svg class="ico" style="width:36px;height:36px;color:var(--rose)"><use href="#i-pdf"/></svg>
+        <div class="meta"><b id="pdfName">尚未選擇 PDF</b><div class="hint" id="pdfInfo" style="font-size:.85rem;color:var(--ink-soft)">PDF 只在你的手機或電腦裡讀取，不會上傳到本網站。</div></div>
+        <label class="btn"><input type="file" id="pdfFile" accept="application/pdf" hidden>選擇 PDF</label>
+      </div>
+      <div class="grid two" style="margin-top:14px">
+        <label class="f">相關頁數 <span class="hint">例如 282-290 或 12, 15, 20（AI 一次最多讀 15 頁）</span><input type="text" id="sourcePages" placeholder="282-290"></label>
+        <div id="pdfPreviewWrap" hidden><div class="hint" style="font-size:.8rem;color:var(--ink-soft);margin-bottom:6px">第一頁預覽</div><img id="pdfPreview" class="pdf-thumb" alt="指定頁數的第一頁預覽"></div>
+      </div>
+      <label class="f" style="margin-top:14px">文案重點與特別要求 <span class="hint">同一個主題，不同文案內容會不同：請貼上或簡述這份文件的重點、步驟、數字，會寫進 NotebookLM 指令與 AI 指示</span>
+        <textarea id="sourceNotes" rows="4" placeholder="例如：本院版本為雙人操作；口令「準備→一、二、拉」；每半年載重演練一次"></textarea></label>
+      <div class="note rose" style="margin-top:16px"><b>提醒：</b>請勿使用含病人姓名、病歷號的文件。NotebookLM 使用時，請把同一份 PDF 上傳到 NotebookLM 作為「來源」。</div>
+    </div>
+
+    <!-- 05 簡報設定 -->
+    <div class="step" data-step="4" hidden>
+      <div class="panel-head">
+        <div class="t"><div class="eyebrow">Step 05 · 簡報設定</div><h2>頁數、語言與視覺風格</h2>
+          <p>視覺風格只寫進 NotebookLM 指令；大綱文字依「內容限定規則」不含畫面描述。</p></div>
+        <button class="btn small say" type="button" data-say="4"><svg class="ico"><use href="#i-speak"/></svg>語音說明</button>
+      </div>
+      <div class="grid two">
+        <label class="f">投影片張數 <span class="hint">不少於 10 張</span>
+          <select id="slideCount"><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option></select></label>
+        <label class="f">簡報語言<select id="deckLang"></select></label>
+      </div>
+      <fieldset style="margin-top:16px"><legend>視覺風格（給 NotebookLM 的圖片提示語）</legend><div class="styles" id="styleCards"></div></fieldset>
+      <label class="chip" style="margin-top:16px"><input type="checkbox" id="withImg">每一頁加上圖像描述語（關閉時套用「內容限定規則」）</label>
+    </div>
+
+    <!-- 06 預覽與修改 -->
+    <div class="step" data-step="5" hidden>
+      <div class="panel-head">
+        <div class="t"><div class="eyebrow">Step 06 · 預覽與修改</div><h2>產生大綱，逐頁預覽修改</h2>
+          <p>三種產生方式：內建範本是起點；「依文案架構」只排頁型，內容由 NotebookLM 依你的 PDF 撰寫；「AI 讀 PDF」直接依文件寫出內容。產生後都能逐頁修改。</p></div>
+        <button class="btn small say" type="button" data-say="5"><svg class="ico"><use href="#i-speak"/></svg>語音說明</button>
+      </div>
+      <div class="gen-bar">
+        <button class="btn primary" id="btnGenTpl" type="button"><svg class="ico"><use href="#i-reset"/></svg>內建範本內容</button>
+        <button class="btn" id="btnGenFrame" type="button"><svg class="ico"><use href="#i-pdf"/></svg>依文案架構（交給 NotebookLM）</button>
+        <button class="btn navy" id="btnGenAi" type="button"><svg class="ico"><use href="#i-spark"/></svg>AI 讀 PDF 產生</button>
+        <div class="status" id="genStatus"></div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="slides" id="tabSlides">投影片大綱</button>
+        <button role="tab" aria-selected="false" data-tab="qa" id="tabQa">Q&A 五題</button>
+      </div>
+      <div data-pane="slides">
+        <div class="editor">
+          <ol class="slide-list" id="slideList"></ol>
+          <div style="min-width:0">
+            <div class="slide-frame" id="slideFrame"></div>
+            <div class="edit-form" id="editForm">
+              <div class="grid two">
+                <label class="f">頁型名稱<input type="text" id="eLabel"></label>
+                <label class="f">標題<input type="text" id="eTitle"></label>
+              </div>
+              <label class="f" id="eSubWrap">副標題<input type="text" id="eSub"></label>
+              <label class="f">核心內容 <span class="hint">一行一點</span><textarea id="ePoints" rows="5"></textarea></label>
+              <label class="f">講者備註<textarea id="eNotes" rows="3"></textarea></label>
+              <label class="f" id="eImgWrap">圖像描述語<textarea id="eImg" rows="2"></textarea></label>
+              <div class="edit-row">
+                <input type="text" class="grow" id="eWish" placeholder="想怎麼改？例如：更口語、加一個情境例子" aria-label="AI 改寫需求">
+                <button class="btn navy small" id="btnRewrite" type="button"><svg class="ico"><use href="#i-spark"/></svg>AI 改寫這頁</button>
+              </div>
+              <div class="edit-row">
+                <button class="btn small" id="btnPrevSlide" type="button"><svg class="ico"><use href="#i-left"/></svg>上一頁</button>
+                <button class="btn small" id="btnNextSlide" type="button">下一頁<svg class="ico"><use href="#i-right"/></svg></button>
+                <span class="grow"></span>
+                <button class="btn small" id="btnAddSlide" type="button"><svg class="ico"><use href="#i-plus"/></svg>插入新頁</button>
+                <button class="btn small" id="btnDelSlide" type="button"><svg class="ico"><use href="#i-trash"/></svg>刪除此頁</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-pane="qa" hidden><div class="qa-list" id="qaList"></div></div>
+    </div>
+
+    <!-- 07 輸出 -->
+    <div class="step" data-step="6" hidden>
+      <div class="panel-head">
+        <div class="t"><div class="eyebrow">Step 07 · 輸出</div><h2>下載、複製與寄送</h2>
+          <p>Word 三份：Q&A 作答卷、Q&A 完整解答、簡報大綱。NotebookLM 指令複製後貼到 NotebookLM 的「自訂簡報」。</p></div>
+        <button class="btn small say" type="button" data-say="6"><svg class="ico"><use href="#i-speak"/></svg>語音說明</button>
+      </div>
+      <div class="out-grid" id="outCards">
+        <div class="out-card">
+          <h3><span class="doc-ico">DOCX</span>Q&A 作答卷</h3>
+          <p>五題題目＋空白作答欄，含姓名、國籍、得分與指導員簽名欄。</p>
+          <button class="btn primary" type="button" data-dl="qaBlank"><svg class="ico"><use href="#i-down"/></svg>下載 Word</button>
+        </div>
+        <div class="out-card">
+          <h3><span class="doc-ico">DOCX</span>Q&A 完整解答</h3>
+          <p>五題題目與參考答案，附評分建議與依據文件。</p>
+          <button class="btn primary" type="button" data-dl="qaAnswer"><svg class="ico"><use href="#i-down"/></svg>下載 Word</button>
+        </div>
+        <div class="out-card">
+          <h3><span class="doc-ico">DOCX</span>簡報大綱</h3>
+          <p>封面依 45／40／32pt 規範，每頁標題、重點與講者備註。</p>
+          <button class="btn" type="button" data-dl="outline"><svg class="ico"><use href="#i-down"/></svg>下載 Word</button>
+        </div>
+      </div>
+      <div class="edit-row" style="margin-top:14px">
+        <button class="btn navy" id="btnShare" type="button"><svg class="ico"><use href="#i-share"/></svg>分享三份 Word（LINE、Gmail…）</button>
+        <button class="btn" id="btnMail" type="button"><svg class="ico"><use href="#i-mail"/></svg>郵件寄送</button>
+      </div>
+      <div class="note" style="margin-top:12px" id="shareNote">手機與平板按「分享」可以直接選 Gmail、LINE 附上檔案；電腦請先下載，再用郵件附加。</div>
+
+      <h3 style="margin:26px 0 10px;font-size:1.15rem">NotebookLM 簡報指令</h3>
+      <textarea class="prompt-box" id="promptBox" readonly aria-label="NotebookLM 指令"></textarea>
+      <div class="edit-row" style="margin-top:10px">
+        <button class="btn primary" id="btnCopy" type="button"><svg class="ico"><use href="#i-copy"/></svg>複製指令</button>
+        <a class="btn" href="https://notebooklm.google.com/" target="_blank" rel="noopener"><svg class="ico"><use href="#i-ext"/></svg>前往 NotebookLM</a>
+      </div>
+      <div class="note" style="margin-top:12px"><b>NotebookLM 使用方式：</b>新增筆記本 → 上傳同一份 PDF 為來源 → Studio 選「簡報」→ 自訂 → 格式「簡報投影片」、語言「中文（繁體）」→ 把指令貼到「說明要建立的簡報」→ 立即生成。</div>
+    </div>
+  </section>
+</main>
+
+<footer class="bottom">
+  <div class="wrap">
+    <button class="btn" id="btnBack" type="button"><svg class="ico"><use href="#i-left"/></svg>上一步</button>
+    <div class="pos" id="pos"></div>
+    <button class="btn primary" id="btnNext" type="button">下一步<svg class="ico"><use href="#i-right"/></svg></button>
+  </div>
+</footer>
+
+<!-- AI 設定 -->
+<dialog id="aiDialog">
+  <form method="dialog" id="aiForm">
+    <h3>AI 設定（可選）</h3>
+    <p style="margin:0;color:var(--ink-soft);font-size:.9rem">填入 Google Gemini 金鑰後，就能讓 AI 讀 PDF 自動產生大綱與 Q&A。沒有金鑰也可以用內建範本。金鑰只存在這台裝置的瀏覽器裡。</p>
+    <label class="f">Gemini API 金鑰<input type="password" id="aiKey" autocomplete="off" placeholder="AIza…"></label>
+    <label class="f">模型<select id="aiModel">
+      <option value="gemini-2.5-flash">gemini-2.5-flash（快、免費額度較多）</option>
+      <option value="gemini-2.5-pro">gemini-2.5-pro（較精準、較慢）</option>
+    </select></label>
+    <div class="note">申請金鑰：到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 登入 Google 帳號 → Create API key → 複製貼上。</div>
+    <div class="actions">
+      <button class="btn" value="clear" type="submit">清除金鑰</button>
+      <button class="btn" value="cancel" type="submit">取消</button>
+      <button class="btn primary" value="save" type="submit">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 教學導覽 -->
+<div id="tour" hidden role="dialog" aria-label="語音教學導覽">
+  <div class="tour-spot"></div>
+  <div class="tour-card" data-pos="center">
+    <svg class="tour-mascot" viewBox="0 0 72 72" aria-hidden="true">
+      <g class="body">
+        <circle cx="36" cy="38" r="26" fill="#ffd9c7"/>
+        <path d="M12 28c2-14 14-20 24-20s22 6 24 20c-6-5-14-7-24-7s-18 2-24 7z" fill="#3b2a2a"/>
+        <path d="M20 14h32l-3 9H23z" fill="#fff" stroke="#a3244f" stroke-width="2"/>
+        <path d="M36 15v6M33 18h6" stroke="#a3244f" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="27" cy="38" r="3" fill="#3b2a2a"/><circle cx="45" cy="38" r="3" fill="#3b2a2a"/>
+        <circle cx="22" cy="45" r="3.5" fill="#ff9db8" opacity=".6"/><circle cx="50" cy="45" r="3.5" fill="#ff9db8" opacity=".6"/>
+        <ellipse class="mouth" cx="36" cy="50" rx="5" ry="3" fill="#a3244f"/>
+      </g>
+    </svg>
+    <div><p class="tour-text"></p></div>
+    <div class="tour-meta">
+      <span class="tour-count"></span>
+      <button class="btn small" data-tour="mute" type="button">靜音</button>
+      <button class="btn small" data-tour="play" type="button">暫停</button>
+      <button class="btn small" data-tour="prev" type="button">上一步</button>
+      <button class="btn small primary" data-tour="next" type="button">下一步</button>
+      <button class="btn small ghost" data-tour="close" type="button" aria-label="關閉導覽">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<!-- 第三方元件放在本站 vendor/，醫院網路擋 CDN 時也能用 -->
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script src="js/topics.js"></script>
+<script src="js/domain.js"></script>
+<script src="js/docx.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

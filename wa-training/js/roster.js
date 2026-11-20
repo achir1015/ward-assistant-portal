@@ -15,15 +15,34 @@ const ROSTER_ORG = 'wa-training.rosterOrg';
 
 /** 人員名單（值物件） */
 class Roster {
-  constructor({ assistants = [], nurses = [], orgLabel = '', loadedAt = '' } = {}) {
-    this.assistants = assistants.map(p => new Person(p));
-    this.nurses = nurses.map(p => new Person(p));
+  constructor({ assistants = [], nurses = [], orgLabel = '', loadedAt = '', monthCount = {} } = {}) {
+    // 每個人多帶一個 months：出現在哪些年月（例如 ['2026-09','2026-10']）
+    const mk = p => Object.assign(new Person(p), { months: p.months || [] });
+    this.assistants = assistants.map(mk);
+    this.nurses = nurses.map(mk);
+    this.monthCount = monthCount;   // 各類別共有幾個月份的班表 { assistant: 6, nurse: 6 }
     this.orgLabel = orgLabel;
     this.loadedAt = loadedAt;
   }
   get isEmpty() { return !this.assistants.length && !this.nurses.length; }
   findAssistant(key) { return this.assistants.find(p => Roster.key(p) === key) || null; }
   findNurse(key) { return this.nurses.find(p => Roster.key(p) === key) || null; }
+  /**
+   * 「最大公約數」：多數月份都在班的人＝常駐人員（排前面）；
+   * 只在少數月份出現的人（支援、離職、新進）另列「其他」，仍可選取。
+   * 門檻：出現月份數 ≥ 全部月份的一半（至少 1 個月）
+   */
+  groups(category) {
+    const list = category === 'nurse' ? this.nurses : this.assistants;
+    const total = this.monthCount[category] || Math.max(1, ...list.map(p => p.months.length));
+    const need = Math.max(1, Math.ceil(total / 2));
+    const byFreq = (a, b) => (b.months.length - a.months.length) || (a.empNo || 'ZZZ').localeCompare(b.empNo || 'ZZZ');
+    return {
+      total,
+      core: list.filter(p => p.months.length >= need).sort(byFreq),
+      others: list.filter(p => p.months.length < need).sort(byFreq)
+    };
+  }
   /** 一個人的識別鍵：有員編用員編，沒有用姓名 */
   static key(p) { return p.empNo || ('name:' + p.name); }
 
@@ -42,15 +61,19 @@ class Roster {
         if (!empNo && !name) return;
         const k = empNo || ('name:' + name);
         // 有員編的人如果先前以「沒員編」身分出現過，合併掉
-        if (empNo && pool.has('name:' + name)) pool.delete('name:' + name);
-        pool.set(k, { empNo, name });
+        const ym = `${s.westYear}-${String(s.month).padStart(2, '0')}`;
+        let months = (pool.get(k) || {}).months || [];
+        if (empNo && pool.has('name:' + name)) { months = months.concat(pool.get('name:' + name).months); pool.delete('name:' + name); }
+        if (!months.includes(ym)) months = months.concat(ym);
+        pool.set(k, { empNo, name, months });
       });
     });
     const sortFn = (a, b) => (a.empNo || 'ZZZ').localeCompare(b.empNo || 'ZZZ') || a.name.localeCompare(b.name, 'zh-Hant');
     return new Roster({
       assistants: [...pools.assistant.values()].sort(sortFn),
       nurses: [...pools.nurse.values()].sort(sortFn),
-      orgLabel, loadedAt: new Date().toISOString()
+      orgLabel, loadedAt: new Date().toISOString(),
+      monthCount: Object.fromEntries(['assistant', 'nurse'].map(c => [c, new Set(sorted.filter(x => x.category === c).map(x => `${x.westYear}-${x.month}`)).size]))
     });
   }
 }

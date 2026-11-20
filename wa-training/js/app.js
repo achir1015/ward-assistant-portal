@@ -81,13 +81,20 @@
   let plan = YearPlan.load(session.rocYear);
   const MANUAL = '__manual';
 
-  /** 人員下拉選項：名單＋（不在名單裡的已選人員）＋手動輸入 */
-  function personOptions(list, selected, { manual = false, placeholder = '— 請選擇 —' } = {}) {
+  /**
+   * 人員下拉選項（依「最大公約數」分組）：
+   *   常駐人員：多數月份都在班的人，排前面
+   *   其他人員：只在少數月份出現（支援、新進、已離開），註明出現幾個月
+   */
+  function personOptions(category, selected, { manual = false, placeholder = '— 請選擇 —' } = {}) {
+    const list = category === 'nurse' ? roster.nurses : roster.assistants;
     const selKey = selected && (selected.empNo || selected.name) ? Roster.key(selected) : '';
+    const opt = (p, note = '') => `<option value="${esc(Roster.key(p))}" ${Roster.key(p) === selKey ? 'selected' : ''}>${esc(p.display)}${note}</option>`;
     const opts = [`<option value="">${placeholder}</option>`];
-    const inList = list.some(p => Roster.key(p) === selKey);
-    if (selKey && !inList) opts.push(`<option value="${esc(selKey)}" selected>${esc(selected.display)}（名單外）</option>`);
-    list.forEach(p => opts.push(`<option value="${esc(Roster.key(p))}" ${Roster.key(p) === selKey ? 'selected' : ''}>${esc(p.display)}</option>`));
+    if (selKey && !list.some(p => Roster.key(p) === selKey)) opts.push(`<option value="${esc(selKey)}" selected>${esc(selected.display)}（名單外）</option>`);
+    const g = roster.groups(category);
+    if (g.core.length) opts.push(`<optgroup label="常駐人員（${g.total} 個月中至少 ${Math.ceil(g.total / 2)} 個月在班）">${g.core.map(p => opt(p)).join('')}</optgroup>`);
+    if (g.others.length) opts.push(`<optgroup label="其他人員（少數月份）">${g.others.map(p => opt(p, `（${p.months.length} 個月）`)).join('')}</optgroup>`);
     if (manual) opts.push(`<option value="${MANUAL}">＋ 手動輸入…</option>`);
     return opts.join('');
   }
@@ -103,7 +110,7 @@
     const r = roster;
     $('#rosterStatus').innerHTML = r.isEmpty
       ? '尚未載入人員名單。按右邊按鈕，從<b>月班表管理系統</b>彙整病房助理與護理師（員編＋姓名，不重複）。'
-      : `人員名單：病房助理 <b>${r.assistants.length}</b> 人、護理師 <b>${r.nurses.length}</b> 人<span class="hint" style="color:var(--ink-soft)">　·　${esc(r.orgLabel || '月班表')}，${new Date(r.loadedAt).toLocaleString('zh-TW', { dateStyle: 'short', timeStyle: 'short' })} 更新</span>`;
+      : `人員名單（常駐／全部）：病房助理 <b>${r.groups('assistant').core.length}</b>／${r.assistants.length} 人、護理師 <b>${r.groups('nurse').core.length}</b>／${r.nurses.length} 人<span class="hint" style="color:var(--ink-soft)">　·　${esc(r.orgLabel || '月班表')}，${new Date(r.loadedAt).toLocaleString('zh-TW', { dateStyle: 'short', timeStyle: 'short' })} 更新</span>`;
     $('#btnRoster').textContent = r.isEmpty ? '從月班表載入名單' : '更新名單';
   }
 
@@ -123,8 +130,8 @@
           <select data-f="topic" aria-label="${MONTHS[m.month]}主題">${topicOptions(m.topicId)}</select>
           <input type="text" data-f="custom" placeholder="輸入自訂主題，例如：抽痰照護" value="${esc(m.customTopic)}" ${m.topicId === 'custom' ? '' : 'hidden'} aria-label="${MONTHS[m.month]}自訂主題">
         </div>
-        <div><span class="lbl-m">主講（病房助理）</span><select data-f="presenter" aria-label="${MONTHS[m.month]}主講">${personOptions(roster.assistants, m.presenter, { placeholder: '— 選擇病房助理 —' })}</select></div>
-        <div><span class="lbl-m">護理指導員</span><select data-f="instructor" aria-label="${MONTHS[m.month]}護理指導員">${personOptions(roster.nurses, m.instructor, { placeholder: '— 選擇護理師 —' })}</select></div>
+        <div><span class="lbl-m">主講（病房助理）</span><select data-f="presenter" aria-label="${MONTHS[m.month]}主講">${personOptions('assistant', m.presenter, { placeholder: '— 選擇病房助理 —' })}</select></div>
+        <div><span class="lbl-m">護理指導員</span><select data-f="instructor" aria-label="${MONTHS[m.month]}護理指導員">${personOptions('nurse', m.instructor, { placeholder: '— 選擇護理師 —' })}</select></div>
         <div><span class="lbl-m">日期</span><input type="date" data-f="date" value="${esc(m.date)}" aria-label="${MONTHS[m.month]}日期"></div>
       </div>`;
     }).join('');
@@ -240,8 +247,8 @@
    * Step 2 人員：從名單選取，名單沒有的人可手動輸入
    * ========================================================= */
   function fillPeople() {
-    $('#presenterSel').innerHTML = personOptions(roster.assistants, session.presenter, { manual: true, placeholder: '— 選擇病房助理 —' });
-    $('#instructorSel').innerHTML = personOptions(roster.nurses, session.instructor, { manual: true, placeholder: '— 選擇護理師 —' });
+    $('#presenterSel').innerHTML = personOptions('assistant', session.presenter, { manual: true, placeholder: '— 選擇病房助理 —' });
+    $('#instructorSel').innerHTML = personOptions('nurse', session.instructor, { manual: true, placeholder: '— 選擇護理師 —' });
     $('#empNo').value = session.presenter.empNo; $('#presenterName').value = session.presenter.name;
     $('#instructorEmpNo').value = session.instructor.empNo; $('#instructorName').value = session.instructor.name;
   }

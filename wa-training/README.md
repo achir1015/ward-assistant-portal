@@ -5,8 +5,8 @@
 臺北市立聯合醫院忠孝院區 RCW 病房助理技術教育（外傭實務訓練）用。手機、平板、電腦都能用。
 
 ## 流程（7 步）
-1. 主題：月份主題表 9 個主題（可自訂）
-2. 人員：簡報人員工編號／姓名、護理指導員
+1. 主題表：選年度，每月下拉主題或自訂；主講病房助理、護理指導員從月班表名單選取；勾選要製作的月份
+2. 人員：確認簡報人與護理指導員（名單外可手動輸入）
 3. 學員：印尼／越南／泰國、華語程度
 4. 依據文件：衛教單張名稱、文案重點、PDF 與頁數
 5. 簡報設定：張數（≥10）、語言、視覺風格
@@ -17,8 +17,9 @@
 | 檔案 | 內容 |
 |---|---|
 | `js/topics.js` | 月份主題範本（目的、用物、步驟、注意事項、Q&A、三語關鍵詞） |
-| `js/domain.js` | `TrainingSession`、`Slide`、`QAItem`、`OutlineBuilder`、`PromptBuilder` |
+| `js/domain.js` | `TrainingSession`、`YearPlan`／`MonthPlan`（年度主題表）、`Slide`、`QAItem`、`OutlineBuilder`、`PromptBuilder` |
 | `js/docx.js` | 在瀏覽器產生 .docx（JSZip） |
+| `js/roster.js` | 從月班表（rcw-month 的 Firebase）彙整不重複的病房助理／護理師名單（只讀） |
 | `js/ai.js` | 可選 Gemini：pdf.js 讀指定頁（掃描版轉圖片）→ 產生大綱與 Q&A |
 | `js/tutorial.js` | 語音朗讀（zh-TW）＋小護士聚光燈導覽 |
 | `js/app.js` | 畫面控制與草稿自動儲存 |

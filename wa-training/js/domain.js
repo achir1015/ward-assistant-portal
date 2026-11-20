@@ -72,9 +72,11 @@ class TrainingSession {
     this.topicName = '逃生滑墊';
     this.customTopic = '';
     this.date = '';
+    this.rocYear = new Date().getFullYear() - 1911;
+    this.month = new Date().getMonth() + 1;
     this.subtitle = SUBTITLE_DEFAULT;
-    this.presenter = new Person({ empNo: 'N1918', name: '潘全偉' });
-    this.instructor = new Person({ name: '程新元' });
+    this.presenter = new Person();
+    this.instructor = new Person();
     this.nationalities = ['id', 'vi', 'th'];
     this.level = 'basic';          // basic 基礎華語 / mid 日常會話
     this.audienceSize = '';
@@ -120,6 +122,49 @@ class TrainingSession {
     s.qa = (o.qa || []).map(x => new QAItem(x.q, x.a));
     return s;
   }
+}
+
+/* =========================================================
+ * 年度主題表：像牆上那張「WA 技術教育（外勞）」月份表
+ * 每個月一格：主題（下拉或自訂）、主講病房助理、護理指導員、日期
+ * 年度與主題不是固定的，每年可以重新排。
+ * ========================================================= */
+class MonthPlan {
+  constructor({ month, topicId = '', customTopic = '', presenter = {}, instructor = {}, date = '' }) {
+    this.month = month; this.topicId = topicId; this.customTopic = customTopic;
+    this.presenter = new Person(presenter); this.instructor = new Person(instructor); this.date = date;
+  }
+  get isPlanned() { return !!this.topicId; }
+  get topicName() {
+    if (this.topicId === 'custom') return this.customTopic || '自訂主題';
+    const t = TOPIC_LIBRARY.find(x => x.id === this.topicId);
+    return t ? t.name : '';
+  }
+}
+
+class YearPlan {
+  constructor(rocYear, months) {
+    this.rocYear = rocYear;
+    this.months = months || YearPlan.seedMonths();
+  }
+  /** 預設：照片上的月份主題當起點（之後可自由更改） */
+  static seedMonths() {
+    return Array.from({ length: 12 }, (_, i) => {
+      const t = TOPIC_LIBRARY.find(x => x.month === i + 1);
+      return new MonthPlan({ month: i + 1, topicId: t ? t.id : '' });
+    });
+  }
+  get(month) { return this.months[month - 1]; }
+  get plannedCount() { return this.months.filter(m => m.isPlanned).length; }
+  static key(rocYear) { return 'wa-training.plan.' + rocYear; }
+  static load(rocYear) {
+    try {
+      const o = JSON.parse(localStorage.getItem(YearPlan.key(rocYear)));
+      if (o && Array.isArray(o.months)) return new YearPlan(rocYear, o.months.map(m => new MonthPlan(m)));
+    } catch {}
+    return new YearPlan(rocYear);
+  }
+  save() { try { localStorage.setItem(YearPlan.key(this.rocYear), JSON.stringify(this)); } catch {} }
 }
 
 /* =========================================================

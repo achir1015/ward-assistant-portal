@@ -356,7 +356,10 @@ body.touring .toast{display:none}
       <div class="plan-tools">
         <label class="f inline">年度
           <select id="planYear"></select></label>
-        <span class="hint">已排 <b id="planCount">0</b> 個月　·　自動儲存在這台裝置</span>
+        <span class="hint">已排 <b id="planCount">0</b> / 12 個月　·　自動儲存在這台裝置</span>
+        <span style="flex:1"></span>
+        <button class="btn small" type="button" id="btnPlanSample">套用範例主題</button>
+        <button class="btn small ghost" type="button" id="btnPlanClear">全部清空</button>
       </div>
       <div class="plan" id="planList" role="radiogroup" aria-label="各月主題"></div>
     </div>

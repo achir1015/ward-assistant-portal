@@ -186,6 +186,14 @@
     $('#pos').textContent = `${current + 1} / ${STEPS.length}　${session.displayTopic}`;
   }
 
+  $('#btnPlanSample').onclick = () => { plan.applySample(); plan.save(); renderPlan(); toast('已把範例主題填入空白月份'); };
+  // 清空用頁內二次確認（不跳視窗）
+  $('#btnPlanClear').onclick = e => {
+    const b = e.currentTarget;
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = '再按一次確認清空'; setTimeout(() => { delete b.dataset.armed; b.textContent = '全部清空'; }, 3000); return; }
+    delete b.dataset.armed; b.textContent = '全部清空';
+    plan.clear(); plan.save(); renderPlan(); toast(`已清空 ${plan.rocYear} 年主題表`);
+  };
   $('#planYear').onchange = e => {
     plan = YearPlan.load(+e.target.value);
     renderPlan();

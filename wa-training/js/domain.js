@@ -147,13 +147,19 @@ class YearPlan {
     this.rocYear = rocYear;
     this.months = months || YearPlan.seedMonths();
   }
-  /** 預設：照片上的月份主題當起點（之後可自由更改） */
+  /** 預設：一到十二月全部空白，再逐月下拉選取 */
   static seedMonths() {
-    return Array.from({ length: 12 }, (_, i) => {
-      const t = TOPIC_LIBRARY.find(x => x.month === i + 1);
-      return new MonthPlan({ month: i + 1, topicId: t ? t.id : '' });
+    return Array.from({ length: 12 }, (_, i) => new MonthPlan({ month: i + 1 }));
+  }
+  /** 套用範例（WA 技術教育月份表照片）：只填空白月份的主題，不覆蓋已排好的 */
+  applySample() {
+    this.months.forEach(m => {
+      if (m.isPlanned) return;
+      const t = TOPIC_LIBRARY.find(x => x.month === m.month);
+      if (t) m.topicId = t.id;
     });
   }
+  clear() { this.months = YearPlan.seedMonths(); }
   get(month) { return this.months[month - 1]; }
   get plannedCount() { return this.months.filter(m => m.isPlanned).length; }
   static key(rocYear) { return 'wa-training.plan.' + rocYear; }
